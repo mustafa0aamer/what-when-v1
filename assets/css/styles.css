@@ -1585,15 +1585,149 @@ select:focus, input[type="text"]:focus, input[type="number"]:focus {
   border-color: var(--accent);
   color: var(--accent-strong);
 }
+
+.sched-btn-text-mobile {
+  display: none;
+}
+
 @media (max-width: 600px) {
-  .schedule-header-btn span {
+  .sched-btn-text-full {
     display: none;
+  }
+  .sched-btn-text-mobile {
+    display: inline;
+    font-size: .8rem;
+    font-weight: 700;
+  }
+  .schedule-header-btn .schedule-version-badge {
+    display: none;
+  }
+  .schedule-header-btn {
+    padding: .35rem .6rem;
   }
   .schedule-modal-card {
     width: 100vw;
     height: 100vh;
     border-radius: 0;
   }
+}
+
+/* First-Visit Tour Spotlight */
+.tour-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(2.5px);
+  -webkit-backdrop-filter: blur(2.5px);
+  z-index: 998;
+  animation: tourFadeIn .25s ease-out;
+}
+@keyframes tourFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.schedule-header-btn.is-spotlight {
+  position: relative;
+  z-index: 999;
+  background: #ffffff !important;
+  color: var(--accent-strong) !important;
+  box-shadow: 0 0 0 3px #0f766e, 0 0 0 7px rgba(15, 118, 110, 0.35), 0 8px 24px rgba(0, 0, 0, 0.25) !important;
+  animation: spotlightPulse 2s infinite ease-in-out;
+}
+@keyframes spotlightPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 3px #0f766e, 0 0 0 7px rgba(15, 118, 110, 0.35), 0 8px 24px rgba(0, 0, 0, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 0 3px #0f766e, 0 0 0 12px rgba(15, 118, 110, 0.15), 0 8px 28px rgba(0, 0, 0, 0.35);
+  }
+}
+
+.tour-popover {
+  position: fixed;
+  top: 72px;
+  right: 1.25rem;
+  width: min(400px, calc(100vw - 2.5rem));
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 24px 48px -12px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  z-index: 1000;
+  padding: 1.25rem 1.4rem;
+  animation: tourSlideDown .25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+[dir="ltr"] .tour-popover {
+  right: auto;
+  left: 1.25rem;
+}
+
+@keyframes tourSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.tour-popover-arrow {
+  position: absolute;
+  top: -8px;
+  right: 65px;
+  width: 16px;
+  height: 16px;
+  background: #ffffff;
+  border-inline-start: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  transform: rotate(45deg);
+}
+[dir="ltr"] .tour-popover-arrow {
+  right: auto;
+  left: 65px;
+}
+
+.tour-header {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: .6rem;
+}
+.tour-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .2rem .55rem;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: .75rem;
+  font-weight: 700;
+}
+.tour-title {
+  margin: 0 0 .5rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.35;
+}
+.tour-body {
+  margin: 0 0 1.2rem;
+  font-size: .88rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+.tour-actions {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  flex-wrap: wrap;
+}
+.tour-actions .btn {
+  flex: 1;
+  min-width: 120px;
 }
 
 

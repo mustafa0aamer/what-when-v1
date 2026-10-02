@@ -70,6 +70,11 @@ const schedModalState = {
   isOpen: false,
 };
 
+/* First-Visit Schedule Tour Spotlight State */
+const tourState = {
+  isOpen: !localStorage.getItem("whatwhen_schedule_tour_seen_v3"),
+};
+
 function persist() { Store.save(state); }
 
 /* ------------------------------------------------------------- Utilities */
@@ -183,6 +188,8 @@ function renderChrome() {
 
   const sched = APP_CONFIG.officialSchedule;
   const schedBtnLabel = t("officialScheduleBtn").replace("{v}", sched.version);
+  const schedMobileLabel = t("officialScheduleMobileBtn").replace("{v}", sched.version);
+  const isSpotlight = tourState.isOpen ? "is-spotlight" : "";
 
   $("#appHeader").innerHTML = `
     <div class="header-inner">
@@ -194,9 +201,10 @@ function renderChrome() {
         </div>
       </a>
       <div class="header-actions">
-        <button class="schedule-header-btn" id="openScheduleModalBtn" type="button" title="${esc(schedBtnLabel)}">
+        <button class="schedule-header-btn ${isSpotlight}" id="openScheduleModalBtn" type="button" title="${esc(schedBtnLabel)}">
           ${ICONS.fileText}
-          <span>${esc(schedBtnLabel)}</span>
+          <span class="sched-btn-text-full">${esc(schedBtnLabel)}</span>
+          <span class="sched-btn-text-mobile">${esc(schedMobileLabel)}</span>
           <span class="schedule-version-badge">${esc(sched.version)}</span>
         </button>
         <button class="icon-btn" id="langToggle" type="button">${esc(t("langToggle"))}</button>
@@ -1353,6 +1361,59 @@ function bindScheduleModal() {
   document.addEventListener("keydown", onKeyDown);
 }
 
+/* -------------------------------------- First-Visit Tour Spotlight View */
+function renderTourPopover() {
+  if (!tourState.isOpen) return "";
+
+  const sched = APP_CONFIG.officialSchedule;
+  const title = t("tourNoticeTitle").replace("{v}", sched.version);
+  const body = t("tourNoticeBody").replace("{v}", sched.version);
+
+  return `
+  <div class="tour-backdrop" id="tourBackdrop"></div>
+  <div class="tour-popover" role="dialog" aria-modal="true" aria-labelledby="tourTitle" id="tourPopover">
+    <div class="tour-popover-arrow" aria-hidden="true"></div>
+    <div class="tour-header">
+      <span class="tour-tag">${ICONS.target} <span>${esc(t("tourNoticeBadge"))}</span></span>
+    </div>
+    <h3 class="tour-title" id="tourTitle">${esc(title)}</h3>
+    <p class="tour-body">${esc(body)}</p>
+    <div class="tour-actions">
+      <button class="btn btn-primary btn-small" id="tourViewBtn" type="button">
+        ${ICONS.fileText}
+        <span>${esc(t("tourNoticeCtaView"))}</span>
+      </button>
+      <button class="btn btn-ghost btn-small" id="tourDismissBtn" type="button">
+        <span>${esc(t("tourNoticeCtaDismiss"))}</span>
+      </button>
+    </div>
+  </div>`;
+}
+
+function bindTour() {
+  const backdrop = $("#tourBackdrop");
+  const viewBtn = $("#tourViewBtn");
+  const dismissBtn = $("#tourDismissBtn");
+
+  const dismiss = () => {
+    localStorage.setItem("whatwhen_schedule_tour_seen_v3", "true");
+    tourState.isOpen = false;
+    renderAll();
+  };
+
+  if (backdrop) backdrop.addEventListener("click", dismiss);
+  if (dismissBtn) dismissBtn.addEventListener("click", dismiss);
+
+  if (viewBtn) {
+    viewBtn.addEventListener("click", () => {
+      localStorage.setItem("whatwhen_schedule_tour_seen_v3", "true");
+      tourState.isOpen = false;
+      schedModalState.isOpen = true;
+      renderAll();
+    });
+  }
+}
+
 /* -------------------------------------------------------------- Render */
 function renderAll() {
   renderChrome();
@@ -1379,6 +1440,19 @@ function renderAll() {
     }
   } else {
     if (existingSchedModal) existingSchedModal.remove();
+  }
+
+  // Handle First-Visit Tour Spotlight
+  const existingTour = $("#tourPopover");
+  const existingBackdrop = $("#tourBackdrop");
+  if (tourState.isOpen) {
+    if (!existingTour) {
+      document.body.insertAdjacentHTML("beforeend", renderTourPopover());
+      bindTour();
+    }
+  } else {
+    if (existingTour) existingTour.remove();
+    if (existingBackdrop) existingBackdrop.remove();
   }
 }
 
