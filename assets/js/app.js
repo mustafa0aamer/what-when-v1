@@ -56,6 +56,7 @@ const state = {
   hoursLimit: persisted.hoursLimit || 0,
   selected: persisted.selected || [],       // array of course indexes
   picks: persisted.picks || {},             // courseIndex -> sectionIndex
+  attendance: persisted.attendance || {},   // courseIndex -> { lecture: 'mandatory'|'skip'|'rare', section: 'mandatory'|'skip'|'rare' }
   catalogView: persisted.catalogView || "grid",   // 'grid' | 'list'
   catalogLevelFilter: persisted.catalogLevelFilter || "all", // 'all' | 1 | 2 | 3 | 4 | 'retake'
 };
@@ -70,6 +71,11 @@ const optState = {
 
 /* Official Schedule Viewer Modal State */
 const schedModalState = {
+  isOpen: false,
+};
+
+/* Attendance Preferences Modal State */
+const attendanceModalState = {
   isOpen: false,
 };
 
@@ -111,6 +117,27 @@ function formatCreditBadge(c) {
   if (h === 1) return t("creditHoursSingle");
   if (h === 2) return t("creditHoursTwo");
   return t("creditHoursCount").replace("{n}", h);
+}
+
+function getCourseAttendance(courseIdx) {
+  const att = (state.attendance && state.attendance[courseIdx]) || {};
+  return {
+    lecture: att.lecture || "mandatory",
+    section: att.section || "mandatory",
+  };
+}
+
+function countCustomAttendance() {
+  if (!state.attendance) return 0;
+  let count = 0;
+  state.selected.forEach((idx) => {
+    const att = state.attendance[idx];
+    if (att) {
+      if (att.lecture && att.lecture !== "mandatory") count++;
+      if (att.section && att.section !== "mandatory") count++;
+    }
+  });
+  return count;
 }
 
 function computeLimit() {
@@ -231,6 +258,7 @@ const ICONS = {
   externalLink: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>',
   userGraduate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/></svg>',
   users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  userCheck: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>',
 };
 
 /* -------------------------------------------------------------- Chrome */
@@ -878,6 +906,14 @@ function renderRegisteredList(model) {
         <span class="badge badge-credit">${esc(formatCreditBadge(course))}</span>
         <span class="badge ${mand ? "badge-mandatory" : "badge-optional"}">${esc(mand ? t("mandatoryShort") : t("optionalShort"))}</span>
         ${sched.hasGroups && !sched.isSeniorFlex ? `<span class="badge badge-group">${sched.activeGroup === 'A' ? esc(t("groupShortA")) : esc(t("groupShortB"))}</span>` : ""}
+        ${(() => {
+          const att = getCourseAttendance(idx);
+          if (att.lecture === "mandatory" && att.section === "mandatory") return "";
+          const parts = [];
+          if (att.lecture !== "mandatory") parts.push(`${t("attendanceLectureLabel")}: ${att.lecture === "skip" ? t("attendanceOptSkip") : t("attendanceOptRare")}`);
+          if (att.section !== "mandatory") parts.push(`${t("attendanceSectionLabel").split(" ")[0]}: ${att.section === "skip" ? t("attendanceOptSkip") : t("attendanceOptRare")}`);
+          return `<span class="badge badge-attendance-pill" title="${esc(parts.join(" · "))}">${ICONS.userCheck}<span>${esc(parts.join(" · "))}</span></span>`;
+        })()}
       </div>
       <div class="reg-actions">
         ${lectureGroupPicker}
@@ -911,6 +947,25 @@ function renderRegisteredList(model) {
       </div>
     </div>` : "";
 
+  const customAttCount = countCustomAttendance();
+  const attendanceTrigger = state.selected.length ? `
+    <div class="attendance-trigger-card">
+      <div class="attendance-trigger-content">
+        <div class="attendance-trigger-icon-wrap" aria-hidden="true">
+          <span class="attendance-trigger-icon">${ICONS.userCheck}</span>
+        </div>
+        <div class="attendance-trigger-info">
+          <h4 class="attendance-trigger-title">${esc(t("attendanceBtn"))}</h4>
+          <p class="attendance-trigger-desc">${esc(t("attendanceBtnSub"))}</p>
+        </div>
+      </div>
+      <button type="button" class="btn btn-outline btn-small open-attendance-modal-btn">
+        <span class="btn-icon">${ICONS.list}</span>
+        <span>${esc(t("attendanceConfigureBtn"))}</span>
+        ${customAttCount > 0 ? `<span class="badge badge-accent">${esc(t("attendanceBadgeActive").replace("{n}", customAttCount))}</span>` : ""}
+      </button>
+    </div>` : "";
+
   return `
   <section class="registered-panel" id="registered">
     <div class="registered-header-row">
@@ -926,6 +981,7 @@ function renderRegisteredList(model) {
     ${cohortCard}
     ${seniorBanner}
     ${heroCallout}
+    ${attendanceTrigger}
     ${state.selected.length
       ? `<div class="reg-list">${items}</div>`
       : `<p class="registered-empty">${esc(t("registeredEmpty"))}</p>`}
@@ -1550,11 +1606,19 @@ function bindPlanner() {
       state.selected = state.selected.filter((i) => i !== idx);
       delete state.picks[idx];
       if (state.lecturePicks) delete state.lecturePicks[idx];
+      if (state.attendance) delete state.attendance[idx];
       if (typeof Analytics !== "undefined") {
         Analytics.trackCourseToggled(course?.code, tr(course?.name), false);
       }
       computeLimit();
       persist();
+      renderAll();
+    });
+  });
+
+  $$(".open-attendance-modal-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      attendanceModalState.isOpen = true;
       renderAll();
     });
   });
@@ -1651,6 +1715,178 @@ function bindScheduleModal() {
   document.addEventListener("keydown", onKeyDown);
 }
 
+/* -------------------------------- Attendance Preferences Modal View */
+function renderAttendanceModal() {
+  if (!attendanceModalState.isOpen) return "";
+
+  const rowsHtml = state.selected.map((idx) => {
+    const course = COURSES[idx];
+    if (!course) return "";
+    const sched = Timetable.getCourseSchedule(course, idx, state);
+    const att = getCourseAttendance(idx);
+
+    let lecDetails = "";
+    if (sched.lectures && sched.lectures.length > 0) {
+      lecDetails = sched.lectures.map((l) => {
+        const dayName = t("day_" + l.day);
+        const slotText = l.slots.length > 1 ? `${l.slots[0]}-${l.slots[l.slots.length - 1]}` : `${l.slots[0]}`;
+        const place = l.place ? ` (${l.place})` : "";
+        const doc = l.doctor ? ` · ${l.doctor}` : "";
+        return `${dayName} - ${t("slotLabel")} ${slotText}${place}${doc}`;
+      }).join(", ");
+    }
+
+    return `
+    <div class="attendance-course-card" data-idx="${idx}">
+      <div class="attendance-course-head">
+        <div class="attendance-course-code-wrap">
+          ${course.code ? `<strong class="course-code">${esc(course.code)}</strong>` : ""}
+          <span class="badge badge-dept badge-${course.dept.toLowerCase()}">${esc(course.dept)}</span>
+          <span class="attendance-course-title">${esc(tr(course.name))}</span>
+        </div>
+        ${course.creditHours ? `<span class="badge badge-credit">${course.creditHours} ${esc(t("creditHoursUnitShort"))}</span>` : ""}
+      </div>
+
+      <div class="attendance-rows-wrap">
+        <!-- Lecture Attendance Row -->
+        <div class="attendance-component-row">
+          <div class="attendance-row-meta">
+            <span class="attendance-component-tag badge-lecture">${esc(t("attendanceLectureLabel"))}</span>
+            <span class="attendance-details-text">${esc(lecDetails || (state.lang === 'ar' ? 'المحاضرة الرسمية' : 'Official Lecture'))}</span>
+          </div>
+          <div class="attendance-pill-group" role="radiogroup" aria-label="${esc(t("attendanceLectureLabel"))}" data-idx="${idx}" data-component="lecture">
+            <button type="button" class="attendance-pill ${att.lecture === 'mandatory' ? 'is-active is-mandatory' : ''}" data-val="mandatory">
+              ${esc(t("attendanceOptMandatory"))}
+            </button>
+            <button type="button" class="attendance-pill ${att.lecture === 'skip' ? 'is-active is-skip' : ''}" data-val="skip">
+              ${esc(t("attendanceOptSkip"))}
+            </button>
+            <button type="button" class="attendance-pill ${att.lecture === 'rare' ? 'is-active is-rare' : ''}" data-val="rare">
+              ${esc(t("attendanceOptRare"))}
+            </button>
+          </div>
+        </div>
+
+        <!-- Section Attendance Row (General for course) -->
+        <div class="attendance-component-row">
+          <div class="attendance-row-meta">
+            <span class="attendance-component-tag badge-section">${esc(t("attendanceSectionLabel"))}</span>
+            <span class="attendance-details-text">${esc(state.lang === 'ar' ? 'ينطبق على سكشن المادة المختار' : 'Applies to chosen section')}</span>
+          </div>
+          <div class="attendance-pill-group" role="radiogroup" aria-label="${esc(t("attendanceSectionLabel"))}" data-idx="${idx}" data-component="section">
+            <button type="button" class="attendance-pill ${att.section === 'mandatory' ? 'is-active is-mandatory' : ''}" data-val="mandatory">
+              ${esc(t("attendanceOptMandatory"))}
+            </button>
+            <button type="button" class="attendance-pill ${att.section === 'skip' ? 'is-active is-skip' : ''}" data-val="skip">
+              ${esc(t("attendanceOptSkip"))}
+            </button>
+            <button type="button" class="attendance-pill ${att.section === 'rare' ? 'is-active is-rare' : ''}" data-val="rare">
+              ${esc(t("attendanceOptRare"))}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+
+  return `
+  <div class="modal-backdrop is-open" id="attendanceModal">
+    <div class="attendance-modal-card" role="dialog" aria-modal="true" aria-labelledby="attendanceModalTitle">
+      <div class="attendance-modal-header">
+        <div class="attendance-header-info">
+          <div class="attendance-header-icon">${ICONS.userCheck}</div>
+          <div>
+            <h3 class="attendance-modal-title" id="attendanceModalTitle">${esc(t("attendanceModalTitle"))}</h3>
+            <p class="attendance-modal-desc">${esc(t("attendanceModalDesc"))}</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" id="attendanceModalCloseBtn" aria-label="Close">${ICONS.x}</button>
+      </div>
+
+      <div class="attendance-modal-body">
+        ${state.selected.length === 0 ? `
+          <div class="attendance-empty-state">
+            <p>${esc(t("attendanceEmptyNotice"))}</p>
+          </div>
+        ` : `
+          <div class="attendance-courses-list">
+            ${rowsHtml}
+          </div>
+        `}
+      </div>
+
+      <div class="attendance-modal-footer">
+        <button type="button" class="btn btn-ghost btn-small" id="attendanceResetAllBtn">
+          ${esc(t("attendanceResetAll"))}
+        </button>
+        <button type="button" class="btn btn-primary btn-small" id="attendanceSaveBtn">
+          ${esc(t("attendanceSaveBtn"))}
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function bindAttendanceModal() {
+  const modal = $("#attendanceModal");
+  if (!modal) return;
+
+  const close = () => {
+    attendanceModalState.isOpen = false;
+    persist();
+    renderAll();
+  };
+
+  const closeBtn = $("#attendanceModalCloseBtn");
+  const saveBtn = $("#attendanceSaveBtn");
+  const resetBtn = $("#attendanceResetAllBtn");
+
+  if (closeBtn) closeBtn.addEventListener("click", close);
+  if (saveBtn) saveBtn.addEventListener("click", close);
+
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) close();
+  });
+
+  const onKeyDown = (e) => {
+    if (e.key === "Escape" && attendanceModalState.isOpen) {
+      attendanceModalState.isOpen = false;
+      document.removeEventListener("keydown", onKeyDown);
+      renderAll();
+    }
+  };
+  document.addEventListener("keydown", onKeyDown);
+
+  if (resetBtn) {
+    resetBtn.addEventListener("click", () => {
+      state.attendance = {};
+      persist();
+      renderAll();
+    });
+  }
+
+  modal.querySelectorAll(".attendance-pill").forEach((pill) => {
+    pill.addEventListener("click", () => {
+      const group = pill.closest(".attendance-pill-group");
+      if (!group) return;
+      const idx = Number(group.dataset.idx);
+      const component = group.dataset.component;
+      const val = pill.dataset.val;
+
+      state.attendance = state.attendance || {};
+      state.attendance[idx] = state.attendance[idx] || { lecture: "mandatory", section: "mandatory" };
+      state.attendance[idx][component] = val;
+
+      group.querySelectorAll(".attendance-pill").forEach((p) => {
+        p.classList.remove("is-active", "is-mandatory", "is-skip", "is-rare");
+      });
+      pill.classList.add("is-active", `is-${val}`);
+
+      persist();
+    });
+  });
+}
+
 /* -------------------------------------- First-Visit Tour Spotlight View */
 function renderTourPopover() {
   if (!tourState.isOpen) return "";
@@ -1730,6 +1966,17 @@ function renderAll() {
     }
   } else {
     if (existingSchedModal) existingSchedModal.remove();
+  }
+
+  // Handle Attendance Preferences Modal
+  const existingAttModal = $("#attendanceModal");
+  if (attendanceModalState.isOpen) {
+    if (!existingAttModal) {
+      document.body.insertAdjacentHTML("beforeend", renderAttendanceModal());
+      bindAttendanceModal();
+    }
+  } else {
+    if (existingAttModal) existingAttModal.remove();
   }
 
   // Handle First-Visit Tour Spotlight
