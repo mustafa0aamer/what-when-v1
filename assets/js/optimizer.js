@@ -149,17 +149,24 @@ const ScheduleOptimizer = {
       return { feasible: false, error: "no_courses_selected" };
     }
 
-    const courses = selectedCourseIndices.map((idx) => ({
-      idx,
-      course: COURSES[idx],
-    }));
+    const courses = selectedCourseIndices.map((idx) => {
+      const course = COURSES[idx];
+      const sched = typeof Timetable !== "undefined" && Timetable.getCourseSchedule
+        ? Timetable.getCourseSchedule(course, idx, (typeof state !== "undefined" ? state : null))
+        : { lectures: course.lectures || [], sections: course.sections || [] };
+      return {
+        idx,
+        course,
+        sched,
+      };
+    });
 
     // Step 1: Extract fixed lecture cells and detect hard lecture-lecture clashes
     const lectureCells = new Map(); // "day:slot" -> [{ courseIdx, course, place }]
     const lectureClashes = [];
 
-    for (const { idx, course } of courses) {
-      course.lectures.forEach((lec) => {
+    for (const { idx, course, sched } of courses) {
+      sched.lectures.forEach((lec) => {
         const lastSlot = lec.slots[1] ?? lec.slots[0];
         for (let s = lec.slots[0]; s <= lastSlot; s++) {
           const key = `${lec.day}:${s}`;
@@ -203,11 +210,15 @@ const ScheduleOptimizer = {
     const validSectionsPerCourse = [];
     const blockedSectionsInfo = [];
 
-    for (const { idx, course } of courses) {
+    for (const { idx, course, sched } of courses) {
+      if (!sched.sections || sched.sections.length === 0) {
+        continue;
+      }
+
       const valid = [];
       const blocked = [];
 
-      course.sections.forEach((sec, secIdx) => {
+      sched.sections.forEach((sec, secIdx) => {
         const secKey = `${sec.day}:${sec.slot}`;
         if (lectureCells.has(secKey)) {
           const conflictingLec = lectureCells.get(secKey)[0];
@@ -352,10 +363,14 @@ const ScheduleOptimizer = {
       sat: [], sun: [], mon: [], tue: [], wed: [], thu: [],
     };
 
-    // Add lectures
+    // Add lectures and chosen sections
     selectedCourseIndices.forEach((cIdx) => {
       const course = COURSES[cIdx];
-      course.lectures.forEach((lec) => {
+      const sched = typeof Timetable !== "undefined" && Timetable.getCourseSchedule
+        ? Timetable.getCourseSchedule(course, cIdx, (typeof state !== "undefined" ? state : null))
+        : { lectures: course.lectures || [], sections: course.sections || [] };
+
+      sched.lectures.forEach((lec) => {
         const lastSlot = lec.slots[1] ?? lec.slots[0];
         for (let s = lec.slots[0]; s <= lastSlot; s++) {
           scheduleByDay[lec.day].push({
@@ -371,8 +386,8 @@ const ScheduleOptimizer = {
 
       // Add chosen section
       const secIdx = picks[cIdx];
-      if (secIdx != null && course.sections[secIdx]) {
-        const sec = course.sections[secIdx];
+      if (secIdx != null && sched.sections[secIdx]) {
+        const sec = sched.sections[secIdx];
         scheduleByDay[sec.day].push({
           kind: "section",
           courseIdx: cIdx,

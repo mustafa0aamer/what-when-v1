@@ -13,6 +13,66 @@
 
 const Timetable = {
 
+  /* ------------------------------------------------ resolve course schedule by cohort */
+  getCourseSchedule(course, idx, st) {
+    if (!course) return { lectures: [], sections: [] };
+    const currentState = st || (typeof state !== "undefined" ? state : { level: 1, group: "A" });
+    const isSenior = (currentState.level || 1) >= 3;
+    const currentGroup = currentState.group || "A";
+
+    if (!course.hasGroups || !course.groups) {
+      return {
+        lectures: course.lectures || [],
+        sections: (course.sections || []).map((s, i) => ({ ...s, originalIdx: i, group: null })),
+        hasGroups: false,
+        activeGroup: null,
+        isSeniorFlex: false,
+      };
+    }
+
+    // Course has groups (A & B)
+    if (!isSenior) {
+      // Level 1 or 2: Student is assigned to a specific group (A or B)
+      const grpData = course.groups[currentGroup] || course.groups.A;
+      return {
+        lectures: grpData.lectures || [],
+        sections: (grpData.sections || []).map((s, i) => ({ ...s, originalIdx: i, group: currentGroup })),
+        hasGroups: true,
+        activeGroup: currentGroup,
+        isSeniorFlex: false,
+      };
+    }
+
+    // Level 3 or 4 (Senior): Can pick any section and lecture from ANY group!
+    const secA = (course.groups.A?.sections || []).map((s, i) => ({ ...s, originalIdx: i, group: "A", unifiedIdx: i }));
+    const secB = (course.groups.B?.sections || []).map((s, i) => ({ ...s, originalIdx: i, group: "B", unifiedIdx: secA.length + i }));
+    const unifiedSections = [...secA, ...secB];
+
+    // Determine lecture group:
+    // 1. Explicit override in lecturePicks if selected
+    // 2. Otherwise match group of the selected section
+    // 3. Fallback to Group A
+    let lecGroup = (currentState.lecturePicks && currentState.lecturePicks[idx]) || null;
+    if (!lecGroup) {
+      const pick = currentState.picks ? currentState.picks[idx] : null;
+      if (pick != null && unifiedSections[pick]) {
+        lecGroup = unifiedSections[pick].group;
+      } else {
+        lecGroup = "A";
+      }
+    }
+
+    const lectures = (course.groups[lecGroup] || course.groups.A).lectures || [];
+
+    return {
+      lectures,
+      sections: unifiedSections,
+      hasGroups: true,
+      activeGroup: lecGroup,
+      isSeniorFlex: true,
+    };
+  },
+
   /* ------------------------------------------------------- build the model */
   build(state) {
     const cells = {};        // "sat:3" -> [placement, ...]
@@ -25,26 +85,31 @@ const Timetable = {
 
     for (const idx of state.selected) {
       const course = COURSES[idx];
+      if (!course) continue;
 
-      course.lectures.forEach((lec) => {
+      const sched = this.getCourseSchedule(course, idx, state);
+
+      sched.lectures.forEach((lec) => {
         const endSlot = lec.slots[1] ?? lec.slots[0];
         for (let s = lec.slots[0]; s <= endSlot; s++) {
           add({
             kind: "lecture", courseIdx: idx, course,
             day: lec.day, slot: s,
             place: lec.place, doctor: lec.doctor,
+            group: sched.hasGroups ? (sched.activeGroup || lec.group) : null,
             first: s === lec.slots[0],
           });
         }
       });
 
       const pick = state.picks ? state.picks[idx] : null;
-      if (pick != null && course.sections[pick]) {
-        const sec = course.sections[pick];
+      if (pick != null && sched.sections[pick]) {
+        const sec = sched.sections[pick];
         add({
           kind: "section", courseIdx: idx, course,
           day: sec.day, slot: sec.slot,
           place: sec.place, labels: sec.label, pick,
+          group: sec.group || null,
         });
       }
     }
@@ -69,7 +134,8 @@ const Timetable = {
   sectionLabel(sec) {
     const day = DAYS.find((d) => d.key === sec.day);
     const slot = SLOTS.find((s) => s.n === sec.slot);
-    return `${tr(day)} · ${t("slotWord")} ${slot.n} (${slot.long}) · ${sec.place} · ${sec.label.join(", ")}`;
+    const grpPrefix = sec.group ? `[${sec.group === "A" ? (typeof state !== "undefined" && state.lang === "ar" ? "مجموعة أ" : "Group A") : (typeof state !== "undefined" && state.lang === "ar" ? "مجموعة ب" : "Group B")}] ` : "";
+    return `${grpPrefix}${tr(day)} · ${t("slotWord")} ${slot.n} (${slot.long}) · ${sec.place} · ${sec.label.join(", ")}`;
   },
 
   /* ------------------------------------------------------------- PNG export */
@@ -121,22 +187,23 @@ const Timetable = {
         wrap(txt, font, colW - pad * 2 - 10).map((l) => ({ txt: l, font, color: base || color }));
 
       const code = p.course.code ? p.course.code + " " : "";
+      const courseName = tr(p.course.name);
       if (p.kind === "section") {
         return [
           ...w(`${t("sectionWord")} ${p.labels.join(", ")}`, `700 10px ${F}`, C.accent),
-          ...w((code + p.course.name).trim(), `600 11px ${F}`, C.text),
+          ...w((code + courseName).trim(), `600 11px ${F}`, C.text),
           ...w(p.place, `10px ${F}`, C.muted),
         ];
       }
       if (!p.first) {
         return [
           ...w(`${t("lectureWord")} · ${t("continuation")}`, `700 10px ${F}`, C.accent),
-          ...w((code + p.course.name).trim(), `600 11px ${F}`, C.text),
+          ...w((code + courseName).trim(), `600 11px ${F}`, C.text),
         ];
       }
       const b = [
         ...w(t("lectureWord"), `700 10px ${F}`, C.accent),
-        ...w((code + p.course.name).trim(), `600 11px ${F}`, C.text),
+        ...w((code + courseName).trim(), `600 11px ${F}`, C.text),
         ...w(p.place, `10px ${F}`, C.muted),
       ];
       if (p.doctor) b.push(...w(p.doctor, `10px ${F}`, C.muted));

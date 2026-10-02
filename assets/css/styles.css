@@ -466,6 +466,40 @@ select:focus, input[type="text"]:focus, input[type="number"]:focus {
 .badge-optional { background: var(--optional-soft); color: var(--optional); }
 .badge-forothers { background: #eef2ff; color: #4f46e5; }
 .badge-level { background: var(--optional-soft); color: var(--text-muted); }
+.badge-credit { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+.badge-retake { background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5; }
+.badge-group { background: #f0f9ff; color: #0369a1; border: 1px solid #e0f2fe; }
+
+.level-filter-pills {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  margin-top: .85rem;
+  overflow-x: auto;
+  padding-bottom: .25rem;
+  -webkit-overflow-scrolling: touch;
+}
+.filter-pill {
+  padding: .32rem .75rem;
+  font-size: .82rem;
+  font-weight: 600;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .15s ease;
+}
+.filter-pill:hover {
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+.filter-pill.is-active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
 
 .phase-note {
   display: flex;
@@ -1728,6 +1762,193 @@ select:focus, input[type="text"]:focus, input[type="number"]:focus {
 .tour-actions .btn {
   flex: 1;
   min-width: 120px;
+}
+
+/* =================================================== COHORT GROUP SWITCHER === */
+.cohort-selector-card {
+  margin-bottom: 1.25rem;
+  background: linear-gradient(135deg, rgba(240, 253, 250, 0.95), rgba(248, 250, 252, 0.98));
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.2rem;
+  box-shadow: 0 4px 16px rgba(15, 118, 110, 0.08);
+}
+.cohort-selector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.cohort-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+.cohort-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  flex-shrink: 0;
+}
+.cohort-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+.cohort-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text);
+}
+.cohort-desc {
+  margin: .15rem 0 0;
+  font-size: .82rem;
+  color: var(--text-muted);
+}
+.cohort-toggle-pills {
+  display: inline-flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  padding: .25rem;
+  border-radius: var(--radius-md);
+  gap: .3rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+.cohort-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .5rem 1rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: .88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .18s ease;
+}
+.cohort-pill-bullet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  background: var(--surface-alt);
+  color: var(--text-muted);
+  font-size: .78rem;
+  font-weight: 800;
+}
+.cohort-pill:hover {
+  background: rgba(15, 118, 110, 0.08);
+  color: var(--accent-strong);
+}
+.cohort-pill.is-active {
+  background: var(--accent);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 118, 110, 0.3);
+}
+.cohort-pill.is-active .cohort-pill-bullet {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+.cohort-selector-footer {
+  margin-top: .75rem;
+  padding-top: .65rem;
+  border-top: 1px dashed rgba(15, 118, 110, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  flex-wrap: wrap;
+  font-size: .78rem;
+}
+.cohort-status-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: .2rem .55rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.cohort-tip {
+  color: var(--text-muted);
+}
+
+/* Senior Flexibility Banner (Level 3 & 4) */
+.cohort-senior-banner {
+  margin-bottom: 1.25rem;
+  background: linear-gradient(135deg, #fffbeb, #fef3c7);
+  border: 1px solid #f59e0b;
+  border-radius: var(--radius-md);
+  padding: .9rem 1.1rem;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.08);
+}
+.senior-banner-head {
+  display: flex;
+  align-items: flex-start;
+  gap: .75rem;
+}
+.senior-banner-icon {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+.senior-banner-title {
+  margin: 0;
+  font-size: .94rem;
+  font-weight: 800;
+  color: #92400e;
+}
+.senior-banner-desc {
+  margin: .25rem 0 0;
+  font-size: .83rem;
+  color: #78350f;
+  line-height: 1.5;
+}
+
+/* Senior Lecture Group Switch */
+.lec-group-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  margin-inline-end: .6rem;
+  background: var(--surface-alt);
+  padding: .2rem .4rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  font-size: .78rem;
+}
+.lec-group-label {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.btn-lec-grp {
+  border: none;
+  background: transparent;
+  padding: .2rem .5rem;
+  border-radius: 4px;
+  font-size: .75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.btn-lec-grp:hover {
+  background: rgba(15, 118, 110, 0.1);
+  color: var(--accent-strong);
+}
+.btn-lec-grp.is-active {
+  background: var(--accent);
+  color: #ffffff;
 }
 
 

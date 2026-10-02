@@ -172,12 +172,12 @@ const FACULTY_ACTIVITY = { day: "tue", slot: 3,
 
 
 const DEPT_NAMES = {
+  GEN: { ar: "مواد عامة (رياضيات - مقررات إنسانية واجتماعية)", en: "General Courses (Math, Humanities & Social Sciences)" },
   CS:  { ar: "علوم الحاسب",                    en: "Computer Science" },
   IT:  { ar: "تكنولوجيا المعلومات",            en: "Information Technology" },
   IS:  { ar: "نظم المعلومات",                  en: "Information Systems" },
   DS:  { ar: "بحوث العمليات ودعم القرار",       en: "Operations Research & Decision Support" },
   AI:  { ar: "الذكاء الاصطناعي",               en: "Artificial Intelligence" },
-  GEN: { ar: "مقررات عامة",                    en: "General Courses" },
 };
 
 /* ---------------------------------------------------------------------------
@@ -188,6 +188,617 @@ const DEPT_NAMES = {
  *       code is unknown). Used for grouping in the catalog.
  * ------------------------------------------------------------------------- */
 const COURSES = [
+  /* ============================ LEVEL 1 ============================ */
+  {
+    code: "HU113",
+    name: { ar: "التفكير الإبداعى ومهارات الاتصال", en: "Creative Thinking & Communication Skills" },
+    dept: "GEN", level: 1, creditHours: 2, mandatoryFor: ["CS", "IT", "IS", "DS", "AI"],
+    hasGroups: true,
+    groups: {
+      A: {
+        lectures: [ { day: "sat", slots: [1], place: "Farag Hall", doctor: "Dr. Omima Saeid" } ],
+        sections: [],
+      },
+      B: {
+        lectures: [ { day: "sat", slots: [1], place: "Al-Shafei Hall", doctor: "Dr. Omima Saeid" } ],
+        sections: [],
+      },
+    },
+    lectures: [ { day: "sat", slots: [1], place: "Farag Hall", doctor: "Dr. Omima Saeid" } ],
+    sections: [],
+  },
+  {
+    code: "HU111",
+    name: { ar: "كتابة التقارير الفنية", en: "Technical Report Writing" },
+    dept: "GEN", level: 1, creditHours: 2, mandatoryFor: ["CS", "IT", "IS", "DS", "AI"],
+    hasGroups: true,
+    groups: {
+      A: {
+        lectures: [ { day: "sun", slots: [1], place: "Farag Hall", doctor: "Prof. Ehab El-Khodary" } ],
+        sections: [],
+      },
+      B: {
+        lectures: [ { day: "sun", slots: [1], place: "Al-Shafei Hall", doctor: "Prof. Ehab El-Khodary" } ],
+        sections: [],
+      },
+    },
+    lectures: [ { day: "sun", slots: [1], place: "Farag Hall", doctor: "Prof. Ehab El-Khodary" } ],
+    sections: [],
+  },
+  {
+    code: "CS111",
+    name: { ar: "اساسيات علوم الحاسب", en: "Fundamentals of Computer Sciences" },
+    dept: "GEN", level: 1, creditHours: 3, mandatoryFor: ["CS", "IT", "IS", "DS", "AI"],
+    hasGroups: true,
+    groups: {
+      A: {
+        lectures: [
+          { day: "sun", slots: [2], place: "Farag Hall", doctor: "Dr. Manar El-Kady & Dr. Laila Safoury" },
+          { day: "thu", slots: [1], place: "Farag Hall", doctor: "Dr. Manar El-Kady & Dr. Laila Safoury" },
+        ],
+        sections: [
+          { label: ["S3", "S4"],   day: "sat", slot: 2, place: "Lab 8" },
+          { label: ["S5", "S6"],   day: "sun", slot: 3, place: "Library Lab" },
+          { label: ["S7", "S8"],   day: "sun", slot: 4, place: "Lab 7" },
+          { label: ["S25", "S26"], day: "mon", slot: 1, place: "Lab 7" },
+          { label: ["S9", "S10"],  day: "mon", slot: 4, place: "Lab 3" },
+          { label: ["S11", "S12"], day: "mon", slot: 5, place: "Lab 6" },
+          { label: ["S1", "S2"],   day: "mon", slot: 5, place: "Lab 7" },
+          { label: ["S13", "S14"], day: "mon", slot: 6, place: "Lab 6" },
+          { label: ["S15", "S16"], day: "tue", slot: 5, place: "Lab 6" },
+          { label: ["S17", "S18"], day: "tue", slot: 5, place: "Lab 3" },
+          { label: ["S19", "S20"], day: "tue", slot: 6, place: "Lab 6" },
+          { label: ["S27", "S28"], day: "wed", slot: 5, place: "Lab 6" },
+          { label: ["S29", "S30"], day: "wed", slot: 5, place: "Lab 7" },
+          { label: ["S21", "S22"], day: "wed", slot: 6, place: "Library Lab" },
+          { label: ["S23", "S24"], day: "thu", slot: 4, place: "Library Lab" },
+          { label: ["S31", "S32"], day: "thu", slot: 5, place: "Library Lab" },
+        ],
+      },
+      B: {
+        lectures: [
+          { day: "sun", slots: [2], place: "Al-Shafei Hall", doctor: "Dr. Manar El-Kady & Dr. Laila Safoury" },
+          { day: "thu", slots: [1], place: "Al-Shafei Hall", doctor: "Dr. Manar El-Kady & Dr. Laila Safoury" },
+        ],
+        sections: [
+          { label: ["S33", "S34"], day: "sat", slot: 2, place: "Lab 6" },
+          { label: ["S35", "S36"], day: "sun", slot: 3, place: "Lab 7" },
+          { label: ["S39", "S40"], day: "sun", slot: 4, place: "Lab 8" },
+          { label: ["S45", "S46"], day: "mon", slot: 4, place: "Lab 7" },
+          { label: ["S47", "S48"], day: "mon", slot: 5, place: "Lab 8" },
+          { label: ["S49", "S50"], day: "tue", slot: 2, place: "Lab 8" },
+          { label: ["S53", "S54"], day: "tue", slot: 5, place: "Library Lab" },
+          { label: ["S37", "S38"], day: "tue", slot: 6, place: "Lab 7" },
+          { label: ["S55", "S56"], day: "wed", slot: 3, place: "Lab 3" },
+          { label: ["S57", "S58"], day: "wed", slot: 5, place: "Lab 5" },
+          { label: ["S51", "S52"], day: "wed", slot: 6, place: "Lab 5" },
+          { label: ["S43", "S44"], day: "wed", slot: 6, place: "Lab 7" },
+          { label: ["S59", "S60"], day: "thu", slot: 3, place: "Lab 5" },
+          { label: ["S41", "S42"], day: "thu", slot: 5, place: "Lab 7" },
+        ],
+      },
+    },
+    lectures: [
+      { day: "sun", slots: [2], place: "Farag Hall", doctor: "Dr. Manar El-Kady & Dr. Laila Safoury" },
+      { day: "thu", slots: [1], place: "Farag Hall", doctor: "Dr. Manar El-Kady & Dr. Laila Safoury" },
+    ],
+    sections: [
+      { label: ["S3", "S4"],   day: "sat", slot: 2, place: "Lab 8" },
+      { label: ["S5", "S6"],   day: "sun", slot: 3, place: "Library Lab" },
+      { label: ["S7", "S8"],   day: "sun", slot: 4, place: "Lab 7" },
+      { label: ["S25", "S26"], day: "mon", slot: 1, place: "Lab 7" },
+      { label: ["S9", "S10"],  day: "mon", slot: 4, place: "Lab 3" },
+      { label: ["S11", "S12"], day: "mon", slot: 5, place: "Lab 6" },
+      { label: ["S1", "S2"],   day: "mon", slot: 5, place: "Lab 7" },
+      { label: ["S13", "S14"], day: "mon", slot: 6, place: "Lab 6" },
+      { label: ["S15", "S16"], day: "tue", slot: 5, place: "Lab 6" },
+      { label: ["S17", "S18"], day: "tue", slot: 5, place: "Lab 3" },
+      { label: ["S19", "S20"], day: "tue", slot: 6, place: "Lab 6" },
+      { label: ["S27", "S28"], day: "wed", slot: 5, place: "Lab 6" },
+      { label: ["S29", "S30"], day: "wed", slot: 5, place: "Lab 7" },
+      { label: ["S21", "S22"], day: "wed", slot: 6, place: "Library Lab" },
+      { label: ["S23", "S24"], day: "thu", slot: 4, place: "Library Lab" },
+      { label: ["S31", "S32"], day: "thu", slot: 5, place: "Library Lab" },
+    ],
+  },
+  {
+    code: "MA111",
+    name: { ar: "رياضة-1", en: "Mathematics-1" },
+    dept: "GEN", level: 1, creditHours: 3, mandatoryFor: ["CS", "IT", "IS", "DS", "AI"],
+    hasGroups: true,
+    groups: {
+      A: {
+        lectures: [ { day: "wed", slots: [1, 2], place: "Farag Hall", doctor: "Dr. Hala Fayez" } ],
+        sections: [
+          { label: ["S1", "S2", "S3", "S4"], day: "sun", slot: 3, place: "Hall 9" },
+          { label: ["S9", "S10", "S11", "S12"], day: "mon", slot: 4, place: "Hall 10" },
+          { label: ["S5", "S6", "S7", "S8"], day: "mon", slot: 5, place: "Hall 9" },
+          { label: ["S13", "S14", "S15", "S16"], day: "thu", slot: 3, place: "Hall 10" },
+        ],
+      },
+      B: {
+        lectures: [ { day: "wed", slots: [1, 2], place: "Al-Shafei Hall", doctor: "Dr. Hala Fayez" } ],
+        sections: [
+          { label: ["S17", "S18", "S19", "S20"], day: "sun", slot: 4, place: "Hall 9" },
+          { label: ["S29", "S30", "S31", "S32"], day: "wed", slot: 3, place: "Hall 10" },
+          { label: ["S25", "S26", "S27", "S28"], day: "wed", slot: 5, place: "Hall 9" },
+          { label: ["S21", "S22", "S23", "S24"], day: "thu", slot: 4, place: "Hall 10" },
+        ],
+      },
+    },
+    lectures: [ { day: "wed", slots: [1, 2], place: "Farag Hall", doctor: "Dr. Hala Fayez" } ],
+    sections: [
+      { label: ["S1", "S2", "S3", "S4"], day: "sun", slot: 3, place: "Hall 9" },
+      { label: ["S9", "S10", "S11", "S12"], day: "mon", slot: 4, place: "Hall 10" },
+      { label: ["S5", "S6", "S7", "S8"], day: "mon", slot: 5, place: "Hall 9" },
+      { label: ["S13", "S14", "S15", "S16"], day: "thu", slot: 3, place: "Hall 10" },
+    ],
+  },
+  {
+    code: "MA112",
+    name: { ar: "تراكيب محددة", en: "Discrete Mathematics" },
+    dept: "GEN", level: 1, creditHours: 3, mandatoryFor: ["CS", "IT", "IS", "DS", "AI"],
+    hasGroups: true,
+    groups: {
+      A: {
+        lectures: [
+          { day: "mon", slots: [3], place: "Farag Hall", doctor: "Dr. Shourouk Wael & Dr. Mai Abdel-Ghafar" },
+          { day: "thu", slots: [2], place: "Farag Hall", doctor: "Dr. Shourouk Wael & Dr. Mai Abdel-Ghafar" },
+        ],
+        sections: [
+          { label: ["S25", "S26", "S27", "S28"], day: "mon", slot: 1, place: "Hall 9" },
+          { label: ["S29", "S30", "S31", "S32"], day: "mon", slot: 1, place: "Hall 10" },
+          { label: ["S9", "S10", "S11", "S12"], day: "tue", slot: 1, place: "Hall 10" },
+          { label: ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"], day: "tue", slot: 2, place: "Hall 7" },
+          { label: ["S13", "S14", "S15", "S16"], day: "tue", slot: 5, place: "Hall 9" },
+          { label: ["S17", "S18", "S19", "S20"], day: "wed", slot: 3, place: "Hall 9" },
+          { label: ["S21", "S22", "S23", "S24"], day: "wed", slot: 5, place: "Hall 10" },
+        ],
+      },
+      B: {
+        lectures: [
+          { day: "mon", slots: [3], place: "Al-Shafei Hall", doctor: "Dr. Shourouk Wael & Dr. Mai Abdel-Ghafar" },
+          { day: "thu", slots: [2], place: "Al-Shafei Hall", doctor: "Dr. Shourouk Wael & Dr. Mai Abdel-Ghafar" },
+        ],
+        sections: [
+          { label: ["S33", "S34", "S35", "S36"], day: "sun", slot: 5, place: "Hall 9" },
+          { label: ["S37", "S38", "S39", "S40"], day: "sun", slot: 5, place: "Hall 10" },
+          { label: ["S49", "S50", "S51", "S52"], day: "tue", slot: 1, place: "Hall 9" },
+          { label: ["S41", "S42", "S43", "S44"], day: "tue", slot: 2, place: "Hall 9" },
+          { label: ["S45", "S46", "S47", "S48"], day: "tue", slot: 4, place: "Hall 10" },
+          { label: ["S53", "S54", "S55", "S56"], day: "tue", slot: 4, place: "Hall 9" },
+          { label: ["S57", "S58", "S59", "S60"], day: "wed", slot: 4, place: "Hall 9" },
+          { label: ["S61", "S62", "S63", "S64"], day: "wed", slot: 4, place: "Hall 10" },
+        ],
+      },
+    },
+    lectures: [
+      { day: "mon", slots: [3], place: "Farag Hall", doctor: "Dr. Shourouk Wael & Dr. Mai Abdel-Ghafar" },
+      { day: "thu", slots: [2], place: "Farag Hall", doctor: "Dr. Shourouk Wael & Dr. Mai Abdel-Ghafar" },
+    ],
+    sections: [
+      { label: ["S25", "S26", "S27", "S28"], day: "mon", slot: 1, place: "Hall 9" },
+      { label: ["S29", "S30", "S31", "S32"], day: "mon", slot: 1, place: "Hall 10" },
+      { label: ["S9", "S10", "S11", "S12"], day: "tue", slot: 1, place: "Hall 10" },
+      { label: ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"], day: "tue", slot: 2, place: "Hall 7" },
+      { label: ["S13", "S14", "S15", "S16"], day: "tue", slot: 5, place: "Hall 9" },
+      { label: ["S17", "S18", "S19", "S20"], day: "wed", slot: 3, place: "Hall 9" },
+      { label: ["S21", "S22", "S23", "S24"], day: "wed", slot: 5, place: "Hall 10" },
+    ],
+  },
+  {
+    code: "IT111",
+    name: { ar: "إلكترونيات", en: "Electronics" },
+    dept: "GEN", level: 1, creditHours: 3, mandatoryFor: ["CS", "IT", "IS", "DS", "AI"],
+    hasGroups: true,
+    groups: {
+      A: {
+        lectures: [
+          { day: "mon", slots: [2], place: "Farag Hall", doctor: "Dr. Elham Shawky & Dr. Ibrahim Zidan" },
+          { day: "thu", slots: [3], place: "Farag Hall", doctor: "Dr. Elham Shawky & Dr. Ibrahim Zidan" },
+        ],
+        sections: [
+          { label: ["S8", "S9", "S10", "S11"], day: "mon", slot: 4, place: "Hall 9" },
+          { label: ["S1", "S2", "S3", "S4", "S5", "S6", "S7"], day: "mon", slot: 5, place: "Hall 7" },
+          { label: ["S12", "S13", "S14", "S15", "S16", "S17", "S18"], day: "tue", slot: 1, place: "Hall 7" },
+          { label: ["S19", "S20", "S21", "S22", "S23"], day: "tue", slot: 4, place: "Hall 8" },
+          { label: ["S24", "S25", "S26", "S27", "S28", "S29", "S30"], day: "wed", slot: 4, place: "Hall 7" },
+        ],
+      },
+      B: {
+        lectures: [
+          { day: "mon", slots: [2], place: "Al-Shafei Hall", doctor: "Dr. Elham Shawky & Dr. Ibrahim Zidan" },
+          { day: "thu", slots: [3], place: "Al-Shafei Hall", doctor: "Dr. Elham Shawky & Dr. Ibrahim Zidan" },
+        ],
+        sections: [
+          { label: ["S39", "S40", "S41", "S42", "S43", "S44", "S45", "S46"], day: "sun", slot: 3, place: "Hall 7" },
+          { label: ["S51", "S52", "S53", "S54"], day: "mon", slot: 5, place: "Hall 10" },
+          { label: ["S35", "S36", "S37", "S38"], day: "tue", slot: 2, place: "Hall 10" },
+          { label: ["S31", "S32", "S33", "S34"], day: "tue", slot: 5, place: "Hall 10" },
+          { label: ["S55", "S56", "S57", "S58", "S59", "S60"], day: "wed", slot: 3, place: "Hall 7" },
+          { label: ["S55", "S56", "S57", "S58"], day: "thu", slot: 3, place: "Hall 9" },
+          { label: ["S47", "S48", "S49", "S50"], day: "thu", slot: 4, place: "Hall 9" },
+        ],
+      },
+    },
+    lectures: [
+      { day: "mon", slots: [2], place: "Farag Hall", doctor: "Dr. Elham Shawky & Dr. Ibrahim Zidan" },
+      { day: "thu", slots: [3], place: "Farag Hall", doctor: "Dr. Elham Shawky & Dr. Ibrahim Zidan" },
+    ],
+    sections: [
+      { label: ["S8", "S9", "S10", "S11"], day: "mon", slot: 4, place: "Hall 9" },
+      { label: ["S1", "S2", "S3", "S4", "S5", "S6", "S7"], day: "mon", slot: 5, place: "Hall 7" },
+      { label: ["S12", "S13", "S14", "S15", "S16", "S17", "S18"], day: "tue", slot: 1, place: "Hall 7" },
+      { label: ["S19", "S20", "S21", "S22", "S23"], day: "tue", slot: 4, place: "Hall 8" },
+      { label: ["S24", "S25", "S26", "S27", "S28", "S29", "S30"], day: "wed", slot: 4, place: "Hall 7" },
+    ],
+  },
+  {
+    code: "MA000",
+    name: { ar: "رياضيات تمهيدية (Math_0)", en: "Mathematics-0 (Remedial)" },
+    dept: "GEN", level: 1, creditHours: 0, mandatoryFor: [],
+    lectures: [ { day: "sun", slots: [6], place: "Farag Hall", doctor: "Dr. Mai Abdel-Ghafar" } ],
+    sections: [
+      { label: ["S1", "S2", "S3", "S4"], day: "sat", slot: 3, place: "Hall 8" },
+      { label: ["S5", "S6", "S7", "S8"], day: "sun", slot: 3, place: "Hall 10" },
+      { label: ["S11", "S12", "S13", "S14"], day: "sun", slot: 4, place: "Hall 10" },
+      { label: ["S9", "S10"], day: "wed", slot: 2, place: "Hall 10" },
+      { label: ["S15", "S16", "S17", "S18", "S19", "S20"], day: "thu", slot: 3, place: "Hall 8" },
+    ],
+  },
+  /* Level 1 Retakes */
+  {
+    code: "CS112",
+    name: { ar: "برمجة هيكلية (إعادة)", en: "Structured Programming (Retake)" },
+    dept: "GEN", level: 1, isRetake: true, creditHours: 3, mandatoryFor: ["CS", "IT", "IS", "DS", "AI"],
+    lectures: [ { day: "sun", slots: [1, 2], place: "Exam Room 404", doctor: "Dr. Soha Makady" } ],
+    sections: [
+      { label: ["S1", "S2"], day: "sat", slot: 1, place: "Lab 7" },
+      { label: ["S3", "S4"], day: "sat", slot: 2, place: "Lab 5" },
+      { label: ["S5", "S6"], day: "sat", slot: 3, place: "Lab 6" },
+      { label: ["S7", "S8"], day: "sat", slot: 4, place: "Lab 3" },
+    ],
+  },
+  {
+    code: "ST121",
+    name: { ar: "احصاء واحتمالات-1 (إعادة)", en: "Probability and Statistics-1 (Retake)" },
+    dept: "GEN", level: 1, isRetake: true, creditHours: 3, mandatoryFor: ["CS", "IT", "IS", "DS", "AI"],
+    lectures: [ { day: "sun", slots: [4, 5], place: "Exam Room 404", doctor: "Dr. Mai Abdel-Ghafar" } ],
+    sections: [
+      { label: ["S1", "S2", "S3", "S4"], day: "mon", slot: 4, place: "Exam Room 404" },
+    ],
+  },
+  {
+    code: "MA113",
+    name: { ar: "رياضة-2 (إعادة)", en: "Mathematics-2 (Retake)" },
+    dept: "GEN", level: 1, isRetake: true, creditHours: 3, mandatoryFor: ["CS", "IT", "IS", "DS", "AI"],
+    lectures: [ { day: "mon", slots: [1, 2], place: "Exam Room 404", doctor: "Dr. Shourouk Wael" } ],
+    sections: [
+      { label: ["S1", "S2", "S3", "S4"], day: "mon", slot: 3, place: "Exam Room 404" },
+    ],
+  },
+
+  /* ============================ LEVEL 2 ============================ */
+  {
+    code: "HU225",
+    name: { ar: "ريادة الأعمال", en: "Entrepreneurship" },
+    dept: "GEN", level: 2, creditHours: 0, mandatoryFor: ["CS", "IT", "IS", "DS", "AI"],
+    hasGroups: true,
+    groups: {
+      A: {
+        lectures: [ { day: "sat", slots: [2], place: "Farag Hall", doctor: "Dr. Sherif Zahran" } ],
+        sections: [],
+      },
+      B: {
+        lectures: [ { day: "sat", slots: [2], place: "Al-Shafei Hall", doctor: "Dr. Sherif Zahran" } ],
+        sections: [],
+      },
+    },
+    lectures: [ { day: "sat", slots: [2], place: "Farag Hall", doctor: "Dr. Sherif Zahran" } ],
+    sections: [],
+  },
+  {
+    code: "CS213",
+    name: { ar: "برمجة شيئية", en: "Object Oriented Programming" },
+    dept: "GEN", level: 2, creditHours: 3, mandatoryFor: ["CS", "IT", "IS", "DS", "AI"],
+    hasGroups: true,
+    groups: {
+      A: {
+        lectures: [
+          { day: "sun", slots: [4], place: "Farag Hall", doctor: "Dr. Mohamed El-Ramly" },
+          { day: "thu", slots: [4], place: "Farag Hall", doctor: "Dr. Mohamed El-Ramly" },
+        ],
+        sections: [
+          { label: ["S1", "S2"],   day: "sat", slot: 1, place: "Lab 6" },
+          { label: ["S5", "S6"],   day: "sat", slot: 3, place: "Lab 5" },
+          { label: ["S3", "S4"],   day: "sat", slot: 5, place: "Lab 8" },
+          { label: ["S11", "S12"], day: "sun", slot: 1, place: "Lab 7" },
+          { label: ["S13", "S14"], day: "sun", slot: 2, place: "Library Lab" },
+          { label: ["S15", "S16"], day: "mon", slot: 3, place: "Library Lab" },
+          { label: ["S17", "S18"], day: "mon", slot: 5, place: "Lab 5" },
+          { label: ["S19", "S20"], day: "wed", slot: 2, place: "Lab 5" },
+          { label: ["S7", "S8"],   day: "thu", slot: 1, place: "Library Lab" },
+          { label: ["S9", "S10"],  day: "thu", slot: 2, place: "Library Lab" },
+        ],
+      },
+      B: {
+        lectures: [
+          { day: "sun", slots: [4], place: "Al-Shafei Hall", doctor: "Dr. Mohamed El-Ramly" },
+          { day: "thu", slots: [4], place: "Al-Shafei Hall", doctor: "Dr. Mohamed El-Ramly" },
+        ],
+        sections: [
+          { label: ["S41", "S42"], day: "sat", slot: 1, place: "Lab 8" },
+          { label: ["S21", "S22"], day: "sat", slot: 3, place: "Lab 3" },
+          { label: ["S23", "S24"], day: "sat", slot: 4, place: "Lab 5" },
+          { label: ["S25", "S26"], day: "sun", slot: 1, place: "Lab 5" },
+          { label: ["S29", "S30"], day: "sun", slot: 2, place: "Lab 6" },
+          { label: ["S27", "S28"], day: "sun", slot: 6, place: "Lab 3" },
+          { label: ["S31", "S32"], day: "mon", slot: 2, place: "Library Lab" },
+          { label: ["S35", "S36"], day: "tue", slot: 5, place: "Lab 5" },
+          { label: ["S37", "S38"], day: "tue", slot: 6, place: "Lab 5" },
+          { label: ["S33", "S34"], day: "wed", slot: 5, place: "Lab 8" },
+          { label: ["S39", "S40"], day: "wed", slot: 6, place: "Lab 8" },
+          { label: ["S43", "S44"], day: "thu", slot: 5, place: "Lab 6" },
+        ],
+      },
+    },
+    lectures: [
+      { day: "sun", slots: [4], place: "Farag Hall", doctor: "Dr. Mohamed El-Ramly" },
+      { day: "thu", slots: [4], place: "Farag Hall", doctor: "Dr. Mohamed El-Ramly" },
+    ],
+    sections: [
+      { label: ["S1", "S2"],   day: "sat", slot: 1, place: "Lab 6" },
+      { label: ["S5", "S6"],   day: "sat", slot: 3, place: "Lab 5" },
+      { label: ["S3", "S4"],   day: "sat", slot: 5, place: "Lab 8" },
+      { label: ["S11", "S12"], day: "sun", slot: 1, place: "Lab 7" },
+      { label: ["S13", "S14"], day: "sun", slot: 2, place: "Library Lab" },
+      { label: ["S15", "S16"], day: "mon", slot: 3, place: "Library Lab" },
+      { label: ["S17", "S18"], day: "mon", slot: 5, place: "Lab 5" },
+      { label: ["S19", "S20"], day: "wed", slot: 2, place: "Lab 5" },
+      { label: ["S7", "S8"],   day: "thu", slot: 1, place: "Library Lab" },
+      { label: ["S9", "S10"],  day: "thu", slot: 2, place: "Library Lab" },
+    ],
+  },
+  {
+    code: "IT221",
+    name: { ar: "تكنولوجيا شبكات الحاسب", en: "Computer Network Technology" },
+    dept: "GEN", level: 2, creditHours: 3, mandatoryFor: ["CS", "IT", "IS", "DS", "AI"],
+    hasGroups: true,
+    groups: {
+      A: {
+        lectures: [
+          { day: "tue", slots: [2], place: "Farag Hall", doctor: "Prof. Haitham Safwat & Prof. Mohamed Hamed & Dr. Heba El-Sherif" },
+          { day: "wed", slots: [3], place: "Al-Shafei Hall", doctor: "Prof. Haitham Safwat & Prof. Mohamed Hamed & Dr. Heba El-Sherif" },
+        ],
+        sections: [
+          { label: ["S1", "S2"],   day: "sat", slot: 1, place: "Library Lab" },
+          { label: ["S5", "S6"],   day: "sat", slot: 4, place: "Lab 6" },
+          { label: ["S3", "S4"],   day: "sat", slot: 5, place: "Library Lab" },
+          { label: ["S7", "S8"],   day: "sun", slot: 1, place: "Lab 8" },
+          { label: ["S9", "S10"],  day: "sun", slot: 2, place: "Lab 7" },
+          { label: ["S11", "S12"], day: "mon", slot: 2, place: "Lab 6" },
+          { label: ["S13", "S14"], day: "wed", slot: 2, place: "Lab 6" },
+          { label: ["S15", "S16"], day: "thu", slot: 1, place: "Lab 5" },
+          { label: ["S17", "S18"], day: "thu", slot: 2, place: "Lab 6" },
+        ],
+      },
+      B: {
+        lectures: [
+          { day: "tue", slots: [2], place: "Al-Shafei Hall", doctor: "Prof. Haitham Safwat & Prof. Mohamed Hamed & Dr. Heba El-Sherif" },
+          { day: "wed", slots: [3], place: "Farag Hall", doctor: "Prof. Haitham Safwat & Prof. Mohamed Hamed & Dr. Heba El-Sherif" },
+        ],
+        sections: [
+          { label: ["S19", "S20"], day: "sat", slot: 3, place: "Library Lab" },
+          { label: ["S21", "S22"], day: "sat", slot: 4, place: "Library Lab" },
+          { label: ["S25", "S26"], day: "sun", slot: 2, place: "Lab 5" },
+          { label: ["S23", "S24"], day: "sun", slot: 6, place: "Library Lab" },
+          { label: ["S27", "S28"], day: "mon", slot: 4, place: "Lab 6" },
+          { label: ["S31", "S32"], day: "mon", slot: 4, place: "Lab 8" },
+          { label: ["S29", "S30"], day: "mon", slot: 5, place: "Lab 5" },
+          { label: ["S33", "S34"], day: "wed", slot: 5, place: "Lab 3" },
+          { label: ["S35", "S36"], day: "thu", slot: 1, place: "Lab 6" },
+          { label: ["S37", "S38"], day: "thu", slot: 5, place: "Lab 8" },
+          { label: ["S39", "S40"], day: "thu", slot: 6, place: "Lab 8" },
+        ],
+      },
+    },
+    lectures: [
+      { day: "tue", slots: [2], place: "Farag Hall", doctor: "Prof. Haitham Safwat & Prof. Mohamed Hamed & Dr. Heba El-Sherif" },
+      { day: "wed", slots: [3], place: "Al-Shafei Hall", doctor: "Prof. Haitham Safwat & Prof. Mohamed Hamed & Dr. Heba El-Sherif" },
+    ],
+    sections: [
+      { label: ["S1", "S2"],   day: "sat", slot: 1, place: "Library Lab" },
+      { label: ["S5", "S6"],   day: "sat", slot: 4, place: "Lab 6" },
+      { label: ["S3", "S4"],   day: "sat", slot: 5, place: "Library Lab" },
+      { label: ["S7", "S8"],   day: "sun", slot: 1, place: "Lab 8" },
+      { label: ["S9", "S10"],  day: "sun", slot: 2, place: "Lab 7" },
+      { label: ["S11", "S12"], day: "mon", slot: 2, place: "Lab 6" },
+      { label: ["S13", "S14"], day: "wed", slot: 2, place: "Lab 6" },
+      { label: ["S15", "S16"], day: "thu", slot: 1, place: "Lab 5" },
+      { label: ["S17", "S18"], day: "thu", slot: 2, place: "Lab 6" },
+    ],
+  },
+  {
+    code: "MA214",
+    name: { ar: "رياضة-3", en: "Mathematics-3" },
+    dept: "GEN", level: 2, creditHours: 3, mandatoryFor: ["CS", "IT", "IS", "DS", "AI"],
+    hasGroups: true,
+    groups: {
+      A: {
+        lectures: [
+          { day: "sun", slots: [5], place: "Farag Hall", doctor: "Prof. Tarek Aboel-Enin" },
+          { day: "tue", slots: [4], place: "Farag Hall", doctor: "Prof. Tarek Aboel-Enin" },
+        ],
+        sections: [
+          { label: ["S1", "S2", "S3", "S4", "S5", "S6", "S7"], day: "sun", slot: 1, place: "Hall 7" },
+          { label: ["S8", "S9", "S10", "S11", "S12", "S13", "S14"], day: "mon", slot: 2, place: "Hall 7" },
+          { label: ["S15", "S16", "S17", "S18", "S19", "S20", "S21"], day: "mon", slot: 4, place: "Hall 7" },
+        ],
+      },
+      B: {
+        lectures: [
+          { day: "sun", slots: [5], place: "Al-Shafei Hall", doctor: "Prof. Tarek Aboel-Enin" },
+          { day: "tue", slots: [4], place: "Al-Shafei Hall", doctor: "Prof. Tarek Aboel-Enin" },
+        ],
+        sections: [
+          { label: ["S29", "S30", "S31", "S32", "S33", "S34", "S35"], day: "sun", slot: 2, place: "Hall 7" },
+          { label: ["S22", "S23", "S24", "S25", "S26", "S27", "S28"], day: "mon", slot: 3, place: "Hall 7" },
+          { label: ["S36", "S37", "S38", "S39", "S40", "S41", "S42"], day: "thu", slot: 2, place: "Hall 8" },
+        ],
+      },
+    },
+    lectures: [
+      { day: "sun", slots: [5], place: "Farag Hall", doctor: "Prof. Tarek Aboel-Enin" },
+      { day: "tue", slots: [4], place: "Farag Hall", doctor: "Prof. Tarek Aboel-Enin" },
+    ],
+    sections: [
+      { label: ["S1", "S2", "S3", "S4", "S5", "S6", "S7"], day: "sun", slot: 1, place: "Hall 7" },
+      { label: ["S8", "S9", "S10", "S11", "S12", "S13", "S14"], day: "mon", slot: 2, place: "Hall 7" },
+      { label: ["S15", "S16", "S17", "S18", "S19", "S20", "S21"], day: "mon", slot: 4, place: "Hall 7" },
+    ],
+  },
+  {
+    code: "ST222",
+    name: { ar: "احصاء واحتمالات-2", en: "Probability and Statistics-2" },
+    dept: "GEN", level: 2, creditHours: 3, mandatoryFor: ["CS", "IT", "IS", "DS", "AI"],
+    hasGroups: true,
+    groups: {
+      A: {
+        lectures: [
+          { day: "sun", slots: [3], place: "Farag Hall", doctor: "Prof. Ehab El-Khodary" },
+          { day: "tue", slots: [1], place: "Farag Hall", doctor: "Prof. Ehab El-Khodary" },
+        ],
+        sections: [
+          { label: ["S1", "S2", "S3", "S4"], day: "sun", slot: 2, place: "Hall 9" },
+          { label: ["S9", "S10", "S11", "S12"], day: "mon", slot: 2, place: "Hall 9" },
+          { label: ["S13", "S14", "S15", "S16"], day: "mon", slot: 4, place: "Hall 8" },
+          { label: ["S17", "S18", "S19", "S20"], day: "thu", slot: 1, place: "Hall 8" },
+          { label: ["S5", "S6", "S7", "S8"], day: "thu", slot: 3, place: "Hall 8" },
+        ],
+      },
+      B: {
+        lectures: [
+          { day: "sun", slots: [3], place: "Al-Shafei Hall", doctor: "Prof. Ehab El-Khodary" },
+          { day: "tue", slots: [1], place: "Al-Shafei Hall", doctor: "Prof. Ehab El-Khodary" },
+        ],
+        sections: [
+          { label: ["S21", "S22", "S23", "S24", "S25"], day: "sun", slot: 1, place: "Hall 8" },
+          { label: ["S36", "S37", "S38", "S39"], day: "mon", slot: 3, place: "Hall 10" },
+          { label: ["S30", "S31", "S32", "S33", "S34", "S35"], day: "mon", slot: 5, place: "Hall 8" },
+          { label: ["S26", "S27", "S28", "S29"], day: "thu", slot: 2, place: "Hall 10" },
+        ],
+      },
+    },
+    lectures: [
+      { day: "sun", slots: [3], place: "Farag Hall", doctor: "Prof. Ehab El-Khodary" },
+      { day: "tue", slots: [1], place: "Farag Hall", doctor: "Prof. Ehab El-Khodary" },
+    ],
+    sections: [
+      { label: ["S1", "S2", "S3", "S4"], day: "sun", slot: 2, place: "Hall 9" },
+      { label: ["S9", "S10", "S11", "S12"], day: "mon", slot: 2, place: "Hall 9" },
+      { label: ["S13", "S14", "S15", "S16"], day: "mon", slot: 4, place: "Hall 8" },
+      { label: ["S17", "S18", "S19", "S20"], day: "thu", slot: 1, place: "Hall 8" },
+      { label: ["S5", "S6", "S7", "S8"], day: "thu", slot: 3, place: "Hall 8" },
+    ],
+  },
+  {
+    code: "DS211",
+    name: { ar: "مقدمة فى بحوث العمليات ودعم القرار", en: "Introduction to Operations Research and Decision Support" },
+    dept: "GEN", level: 2, creditHours: 3, mandatoryFor: ["CS", "IT", "IS", "DS", "AI"],
+    hasGroups: true,
+    groups: {
+      A: {
+        lectures: [
+          { day: "mon", slots: [1], place: "Al-Shafei Hall", doctor: "Dr. Sally Kasem & Dr. Hayam Gamal" },
+          { day: "wed", slots: [4], place: "Al-Shafei Hall", doctor: "Dr. Sally Kasem & Dr. Hayam Gamal" },
+        ],
+        sections: [
+          { label: ["S8", "S9", "S10", "S11", "S12"], day: "wed", slot: 2, place: "Hall 8" },
+          { label: ["S13", "S14", "S15", "S16", "S17", "S18", "S19"], day: "thu", slot: 2, place: "Hall 7" },
+          { label: ["S1", "S2", "S3", "S4", "S5", "S6", "S7"], day: "thu", slot: 3, place: "Hall 7" },
+        ],
+      },
+      B: {
+        lectures: [
+          { day: "mon", slots: [1], place: "Farag Hall", doctor: "Dr. Sally Kasem & Dr. Hayam Gamal" },
+          { day: "wed", slots: [4], place: "Farag Hall", doctor: "Dr. Sally Kasem & Dr. Hayam Gamal" },
+        ],
+        sections: [
+          { label: ["S34", "S35", "S36", "S37", "S38", "S39", "S40"], day: "wed", slot: 1, place: "Hall 7" },
+          { label: ["S27", "S28", "S29", "S30", "S31", "S32", "S33"], day: "wed", slot: 2, place: "Hall 7" },
+          { label: ["S20", "S21", "S22", "S23", "S24", "S25", "S26"], day: "thu", slot: 1, place: "Hall 7" },
+        ],
+      },
+    },
+    lectures: [
+      { day: "mon", slots: [1], place: "Al-Shafei Hall", doctor: "Dr. Sally Kasem & Dr. Hayam Gamal" },
+      { day: "wed", slots: [4], place: "Al-Shafei Hall", doctor: "Dr. Sally Kasem & Dr. Hayam Gamal" },
+    ],
+    sections: [
+      { label: ["S8", "S9", "S10", "S11", "S12"], day: "wed", slot: 2, place: "Hall 8" },
+      { label: ["S13", "S14", "S15", "S16", "S17", "S18", "S19"], day: "thu", slot: 2, place: "Hall 7" },
+      { label: ["S1", "S2", "S3", "S4", "S5", "S6", "S7"], day: "thu", slot: 3, place: "Hall 7" },
+    ],
+  },
+  {
+    code: "IT212",
+    name: { ar: "تصميم منطقي", en: "Logic Design" },
+    dept: "GEN", level: 2, creditHours: 3, mandatoryFor: ["CS", "IT", "IS", "DS", "AI"],
+    lectures: [
+      { day: "mon", slots: [4, 5], place: "Al-Shafei Hall", doctor: "Dr. Eman Ahmed & Dr. Dina Tarek" },
+    ],
+    sections: [
+      { label: ["S21", "S22", "S23", "S24"], day: "tue", slot: 5, place: "Hall 8" },
+      { label: ["S1", "S2", "S3", "S4"],     day: "thu", slot: 1, place: "Exam Room 411" },
+      { label: ["S5", "S6", "S7", "S8"],     day: "thu", slot: 2, place: "Exam Room 411" },
+      { label: ["S21", "S22", "S23", "S24"], day: "thu", slot: 2, place: "Exam Room 404" },
+      { label: ["S17", "S18", "S19", "S20"], day: "thu", slot: 3, place: "Exam Room 411" },
+      { label: ["S9", "S10", "S11", "S12"],  day: "thu", slot: 4, place: "Exam Room 411" },
+      { label: ["S3", "S14", "S15", "S16"],  day: "thu", slot: 5, place: "Exam Room 411" },
+    ],
+  },
+  /* Level 2 Retakes */
+  {
+    code: "CS214",
+    name: { ar: "هياكل البيانات (إعادة)", en: "Data Structures (Retake)" },
+    dept: "GEN", level: 2, isRetake: true, creditHours: 3, mandatoryFor: ["CS", "IT", "IS", "DS", "AI"],
+    lectures: [ { day: "sat", slots: [2, 3], place: "Exam Room 408", doctor: "Dr. Samar Hesham" } ],
+    sections: [
+      { label: ["S9", "S10"], day: "tue", slot: 4, place: "Lab 8" },
+      { label: ["S11", "S12"], day: "tue", slot: 5, place: "Lab 8" },
+      { label: ["S13", "S14"], day: "tue", slot: 6, place: "Lab 8" },
+      { label: ["S1", "S2"], day: "thu", slot: 1, place: "Lab 3" },
+      { label: ["S3", "S4"], day: "thu", slot: 2, place: "Lab 3" },
+      { label: ["S5", "S6"], day: "thu", slot: 3, place: "Lab 6" },
+      { label: ["S7", "S8"], day: "thu", slot: 4, place: "Lab 7" },
+    ],
+  },
+  {
+    code: "IS231",
+    name: { ar: "تكنولوجيا الويب (إعادة)", en: "Web Technology (Retake)" },
+    dept: "GEN", level: 2, isRetake: true, creditHours: 3, mandatoryFor: ["CS", "IT", "IS", "DS", "AI"],
+    lectures: [ { day: "sat", slots: [4, 5], place: "Exam Room 408", doctor: "Dr. Laila Abdel Rahman" } ],
+    sections: [
+      { label: ["S1", "S2"], day: "thu", slot: 1, place: "Lab 8" },
+      { label: ["S3", "S4"], day: "thu", slot: 2, place: "Lab 8" },
+    ],
+  },
+  {
+    code: "CS251",
+    name: { ar: "مقدمة في هندسة البرمجيات (إعادة)", en: "Introduction to Software Engineering (Retake)" },
+    dept: "GEN", level: 2, isRetake: true, creditHours: 3, mandatoryFor: ["CS", "IT", "IS", "DS", "AI"],
+    lectures: [ { day: "wed", slots: [1, 2], place: "Exam Room 409", doctor: "Dr. Lamia Abo Zaid" } ],
+    sections: [
+      { label: ["S7", "S8"], day: "mon", slot: 1, place: "Lab 8" },
+      { label: ["S9", "S10"], day: "mon", slot: 2, place: "Lab 7" },
+      { label: ["S3", "S4"], day: "thu", slot: 1, place: "Lab 7" },
+      { label: ["S11", "S12"], day: "thu", slot: 2, place: "Lab 7" },
+      { label: ["S1", "S2"], day: "thu", slot: 3, place: "Lab 5" },
+      { label: ["S13", "S14"], day: "thu", slot: 6, place: "Lab 6" },
+      { label: ["S5", "S6"], day: "thu", slot: 6, place: "Lab 7" },
+    ],
+  },
+
   /* ============================ LEVEL 3 ============================ */
   {
     code: "CS316", name: "Advanced Data Structures",

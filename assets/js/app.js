@@ -46,7 +46,8 @@ const state = {
   passedHours: persisted.passedHours != null ? Number(persisted.passedHours) : null,
   gpa: persisted.gpa != null ? Number(persisted.gpa) : null,
   level: persisted.level || (persisted.passedHours != null ? ACADEMIC_BYLAWS.calcLevel(persisted.passedHours) : 4),
-  group: persisted.group || null,           // 'A' | 'B' | null (for levels 1 & 2)
+  group: persisted.group || "A",           // 'A' | 'B' (cohort for levels 1 & 2)
+  lecturePicks: persisted.lecturePicks || {}, // courseIndex -> 'A' | 'B' (for levels 3 & 4 senior flexibility)
   dept: persisted.dept || null,             // 'CS' | 'IT' | 'IS' | 'DS' | 'AI' | 'GEN'
   project: persisted.project ?? false,      // only allowed if passedHours >= 85
   extraHours: persisted.extraHours ?? false,// only allowed if canOverload
@@ -55,6 +56,7 @@ const state = {
   selected: persisted.selected || [],       // array of course indexes
   picks: persisted.picks || {},             // courseIndex -> sectionIndex
   catalogView: persisted.catalogView || "grid",   // 'grid' | 'list'
+  catalogLevelFilter: persisted.catalogLevelFilter || "all", // 'all' | 1 | 2 | 3 | 4 | 'retake'
 };
 
 /* Smart Optimizer Modal State */
@@ -88,8 +90,26 @@ function esc(str) {
 }
 
 function usedHours() {
-  return state.selected.length * APP_CONFIG.creditHoursPerCourse +
-    (state.project ? APP_CONFIG.project.creditHours : 0);
+  const coursesHours = state.selected.reduce((sum, idx) => {
+    const c = COURSES[idx];
+    return sum + (c && typeof c.creditHours === "number" ? c.creditHours : 3);
+  }, 0);
+  return coursesHours + (state.project ? APP_CONFIG.project.creditHours : 0);
+}
+
+function canAddCourse(courseIdx) {
+  if (state.selected.includes(courseIdx)) return true;
+  const course = COURSES[courseIdx];
+  const cost = course && typeof course.creditHours === "number" ? course.creditHours : 3;
+  return usedHours() + cost <= state.hoursLimit;
+}
+
+function formatCreditBadge(c) {
+  const h = c && typeof c.creditHours === "number" ? c.creditHours : 3;
+  if (h === 0) return t("creditHoursZero");
+  if (h === 1) return t("creditHoursSingle");
+  if (h === 2) return t("creditHoursTwo");
+  return t("creditHoursCount").replace("{n}", h);
 }
 
 function computeLimit() {
@@ -122,7 +142,7 @@ function computeLimit() {
 
 function groupCourses() {
   const isSpec = state.passedHours != null ? ACADEMIC_BYLAWS.isSpecialized(state.passedHours) : true;
-  const order = [...APP_CONFIG.departments, "GEN"];
+  const order = ["GEN", ...APP_CONFIG.departments];
   const groups = new Map(order.map((d) => [d, []]));
 
   COURSES.forEach((course, idx) => {
@@ -130,6 +150,16 @@ function groupCourses() {
     if (!isSpec && (course.level && course.level >= 3)) {
       return;
     }
+
+    // Filter pill check (Level 1, 2, 3, 4, Retake, All)
+    if (state.catalogLevelFilter && state.catalogLevelFilter !== "all") {
+      if (state.catalogLevelFilter === "retake") {
+        if (!course.isRetake) return;
+      } else if (course.level !== Number(state.catalogLevelFilter)) {
+        return;
+      }
+    }
+
     const targetDept = groups.has(course.dept) ? course.dept : "GEN";
     groups.get(targetDept).push({ course, idx });
   });
@@ -339,21 +369,6 @@ function renderSetup() {
         ${ICONS.book} <span>${esc(t("notSpecializedNotice"))}</span>
       </div>
 
-      <div class="field" id="cohortGroupField" ${requiresCohort ? "" : 'style="display:none;"'}>
-        <span class="field-label">${esc(t("cohortGroupLabel"))}</span>
-        <div class="choice-row">
-          <label class="choice">
-            <input type="radio" name="cohortGroup" value="A" ${groupChecked("A")}>
-            <span>${esc(t("groupA"))}</span>
-          </label>
-          <label class="choice">
-            <input type="radio" name="cohortGroup" value="B" ${groupChecked("B")}>
-            <span>${esc(t("groupB"))}</span>
-          </label>
-        </div>
-        <p class="field-hint">${esc(t("cohortGroupHint"))}</p>
-      </div>
-
       <div class="field" id="projectField" ${canProj ? "" : 'style="display:none;"'}>
         <span class="field-label">${esc(t("projectLabel"))}</span>
         <div class="choice-row">
@@ -393,7 +408,6 @@ function bindSetup() {
   const deptField = $("#deptField");
   const deptSelect = $("#dept");
   const preSpecNotice = $("#preSpecNotice");
-  const cohortField = $("#cohortGroupField");
   const projectField = $("#projectField");
   const extraHoursBox = $("#extraHoursBox");
   const extraHoursCheck = $("#extraHours");
@@ -439,15 +453,6 @@ function bindSetup() {
         deptField.style.display = "none";
         preSpecNotice.style.display = "";
         deptSelect.required = false;
-      }
-    }
-
-    // Cohort Group visibility (Levels 1 & 2)
-    if (cohortField) {
-      cohortField.style.display = requiresCohort ? "" : "none";
-      if (!requiresCohort) {
-        const checkedGrp = form.querySelector('input[name="cohortGroup"]:checked');
-        if (checkedGrp) checkedGrp.checked = false;
       }
     }
 
@@ -511,10 +516,7 @@ function bindSetup() {
     }
 
     if (requiresCohort) {
-      const grp = form.querySelector('input[name="cohortGroup"]:checked');
-      state.group = grp ? grp.value : "A";
-    } else {
-      state.group = null;
+      state.group = state.group || "A";
     }
 
     if (canProj) {
@@ -575,8 +577,10 @@ function goBackToSetup() {
 /* ============================================================ PLANNER === */
 function renderCourseCard(course, idx) {
   const isSelected = state.selected.includes(idx);
-  const isMandatory = course.mandatoryFor.includes(state.dept);
+  const isMandatory = course.mandatoryFor && course.mandatoryFor.includes(state.dept);
   const pick = state.picks[idx] ?? null;
+  const canAdd = canAddCourse(idx);
+  const disabled = !isSelected && !canAdd;
 
   const badges = [];
   if (isMandatory) {
@@ -584,28 +588,36 @@ function renderCourseCard(course, idx) {
   } else {
     badges.push(`<span class="badge badge-optional">${esc(t("optionalBadge"))}</span>`);
   }
-  if (course.mandatoryFor.length && !isMandatory) {
+  if (course.mandatoryFor && course.mandatoryFor.length && !isMandatory) {
     badges.push(`<span class="badge badge-forothers">${esc(t("mandatoryForPrefix"))} ${esc(course.mandatoryFor.join(", "))}</span>`);
   }
   badges.push(`<span class="badge badge-level">${esc(t("levelPrefix"))} ${course.level}</span>`);
+  if (course.isRetake) {
+    badges.push(`<span class="badge badge-retake">${esc(t("retakeBadge"))}</span>`);
+  }
+  badges.push(`<span class="badge badge-credit">${esc(formatCreditBadge(course))}</span>`);
 
   const meta = [
     course.code ? `<span class="course-code">${esc(course.code)}</span>` : "",
     ...badges,
   ].join("");
 
+  const sched = typeof Timetable !== "undefined" && Timetable.getCourseSchedule
+    ? Timetable.getCourseSchedule(course, idx, state)
+    : { lectures: course.lectures || [], sections: course.sections || [] };
+
   const counts = `
-    <span class="course-count">${course.lectures.length} ${esc(t("lecturesCount"))}</span>
-    <span class="course-count">${course.sections.length} ${esc(t("sectionsCount"))}</span>
-    ${isSelected && pick != null ? `<span class="course-count course-count--picked">${ICONS.check}${esc(Timetable.sectionLabel(course.sections[pick]))}</span>` : ""}`;
+    <span class="course-count">${sched.lectures.length} ${esc(t("lecturesCount"))}</span>
+    ${sched.sections.length ? `<span class="course-count">${sched.sections.length} ${esc(t("sectionsCount"))}</span>` : ""}
+    ${isSelected && pick != null && sched.sections[pick] ? `<span class="course-count course-count--picked">${ICONS.check}${esc(Timetable.sectionLabel(sched.sections[pick]))}</span>` : ""}`;
 
   return `
-  <div class="course-card ${isSelected ? "is-selected" : ""}">
-    <label class="course-check-row">
-      <input type="checkbox" class="course-check" data-idx="${idx}" ${isSelected ? "checked" : ""}>
+  <div class="course-card ${isSelected ? "is-selected" : ""} ${disabled ? "is-disabled" : ""}">
+    <label class="course-check-row" ${disabled ? `title="${esc(t("limitReached"))}"` : ""}>
+      <input type="checkbox" class="course-check" data-idx="${idx}" ${isSelected ? "checked" : ""} ${disabled ? "disabled" : ""}>
       <div class="course-body">
         <div class="course-top">
-          <span class="course-name">${esc(course.name)}</span>
+          <span class="course-name">${esc(tr(course.name))}</span>
           ${counts}
         </div>
         <div class="course-meta">${meta}</div>
@@ -641,11 +653,102 @@ function renderRegisteredList(model) {
   const conflicted = new Set();
   model.conflicts.forEach((c) => c.items.forEach((p) => conflicted.add(p.courseIdx)));
 
+  const isSenior = (state.level || 1) >= 3;
+  const currentGroup = state.group || "A";
+
+  const cohortCard = !isSenior ? `
+    <div class="cohort-selector-card">
+      <div class="cohort-selector-header">
+        <div class="cohort-title-wrap">
+          <span class="cohort-icon">${ICONS.users || '👥'}</span>
+          <div>
+            <h4 class="cohort-title">${esc(t("cohortSelectTitle"))}</h4>
+            <p class="cohort-desc">${esc(t("cohortSelectDesc"))}</p>
+          </div>
+        </div>
+        <div class="cohort-toggle-pills" role="radiogroup" aria-label="${esc(t("cohortGroupLabel"))}">
+          <button type="button" class="cohort-pill ${currentGroup === 'A' ? 'is-active' : ''}" data-group="A">
+            <span class="cohort-pill-bullet">A</span>
+            <span>${esc(t("groupA"))}</span>
+          </button>
+          <button type="button" class="cohort-pill ${currentGroup === 'B' ? 'is-active' : ''}" data-group="B">
+            <span class="cohort-pill-bullet">B</span>
+            <span>${esc(t("groupB"))}</span>
+          </button>
+        </div>
+      </div>
+      <div class="cohort-selector-footer">
+        <span class="cohort-status-tag">${currentGroup === 'B' ? esc(t("showingGroupB")) : esc(t("showingGroupA"))}</span>
+        <span class="cohort-tip">${esc(t("cohortSwitchHint"))}</span>
+      </div>
+    </div>` : "";
+
+  const hasGroupCourses = state.selected.some((idx) => COURSES[idx]?.hasGroups);
+  const seniorBanner = (isSenior && hasGroupCourses) ? `
+    <div class="cohort-senior-banner">
+      <div class="senior-banner-head">
+        <span class="senior-banner-icon">⚡</span>
+        <div>
+          <h4 class="senior-banner-title">${esc(t("seniorFlexTitle"))}</h4>
+          <p class="senior-banner-desc">${esc(t("seniorFlexDesc"))}</p>
+        </div>
+      </div>
+    </div>` : "";
+
   const items = state.selected.map((idx) => {
     const course = COURSES[idx];
+    const sched = Timetable.getCourseSchedule(course, idx, state);
     const pick = state.picks[idx] ?? null;
     const clash = conflicted.has(idx);
-    const mand = course.mandatoryFor.includes(state.dept);
+    const mand = course.mandatoryFor && course.mandatoryFor.includes(state.dept);
+
+    let sectionSelectHtml = "";
+    if (sched.sections && sched.sections.length > 0) {
+      if (sched.isSeniorFlex) {
+        const secA = sched.sections.filter((s) => s.group === "A");
+        const secB = sched.sections.filter((s) => s.group === "B");
+        sectionSelectHtml = `
+          <select class="section-select" data-idx="${idx}">
+            <option value="" ${pick == null ? "selected" : ""} disabled>${esc(t("pickSectionPh"))}</option>
+            ${secA.length ? `
+              <optgroup label="${esc(t("groupA"))}">
+                ${secA.map((s) =>
+                  `<option value="${s.unifiedIdx}" ${pick === s.unifiedIdx ? "selected" : ""}>${esc(Timetable.sectionLabel(s))}</option>`
+                ).join("")}
+              </optgroup>` : ""}
+            ${secB.length ? `
+              <optgroup label="${esc(t("groupB"))}">
+                ${secB.map((s) =>
+                  `<option value="${s.unifiedIdx}" ${pick === s.unifiedIdx ? "selected" : ""}>${esc(Timetable.sectionLabel(s))}</option>`
+                ).join("")}
+              </optgroup>` : ""}
+          </select>`;
+      } else {
+        sectionSelectHtml = `
+          <select class="section-select" data-idx="${idx}">
+            <option value="" ${pick == null ? "selected" : ""} disabled>${esc(t("pickSectionPh"))}</option>
+            ${sched.sections.map((s, i) =>
+              `<option value="${i}" ${pick === i ? "selected" : ""}>${esc(Timetable.sectionLabel(s))}</option>`
+            ).join("")}
+          </select>`;
+      }
+    } else {
+      sectionSelectHtml = `<span class="badge badge-optional" style="margin-inline-end: .5rem;">${esc(t("lectureOnlyWord"))}</span>`;
+    }
+
+    let lectureGroupPicker = "";
+    if (sched.hasGroups && sched.isSeniorFlex) {
+      lectureGroupPicker = `
+        <div class="lec-group-switch" title="${esc(t("lectureGroupLabel"))}">
+          <span class="lec-group-label">${esc(t("lectureGroupLabel"))}:</span>
+          <button type="button" class="btn-lec-grp ${sched.activeGroup === 'A' ? 'is-active' : ''}" data-idx="${idx}" data-lecgroup="A">
+            ${esc(t("groupShortA"))}
+          </button>
+          <button type="button" class="btn-lec-grp ${sched.activeGroup === 'B' ? 'is-active' : ''}" data-idx="${idx}" data-lecgroup="B">
+            ${esc(t("groupShortB"))}
+          </button>
+        </div>`;
+    }
 
     return `
     <div class="reg-item ${clash ? "reg-item--clash" : ""}">
@@ -653,17 +756,15 @@ function renderRegisteredList(model) {
         ${clash ? `<span class="reg-clashicon" title="${esc(t("conflictSection"))}">${ICONS.alert}</span>` : ""}
         <span class="reg-name">
           ${course.code ? `<strong class="course-code">${esc(course.code)}</strong>` : ""}
-          ${esc(course.name)}
+          ${esc(tr(course.name))}
         </span>
+        <span class="badge badge-credit">${esc(formatCreditBadge(course))}</span>
         <span class="badge ${mand ? "badge-mandatory" : "badge-optional"}">${esc(mand ? t("mandatoryShort") : t("optionalShort"))}</span>
+        ${sched.hasGroups && !sched.isSeniorFlex ? `<span class="badge badge-group">${sched.activeGroup === 'A' ? esc(t("groupShortA")) : esc(t("groupShortB"))}</span>` : ""}
       </div>
       <div class="reg-actions">
-        <select class="section-select" data-idx="${idx}">
-          <option value="" ${pick == null ? "selected" : ""} disabled>${esc(t("pickSectionPh"))}</option>
-          ${course.sections.map((s, i) =>
-            `<option value="${i}" ${pick === i ? "selected" : ""}>${esc(Timetable.sectionLabel(s))}</option>`
-          ).join("")}
-        </select>
+        ${lectureGroupPicker}
+        ${sectionSelectHtml}
         <button class="icon-btn reg-remove" data-idx="${idx}" type="button"
                 title="${esc(t("removeCourse"))}" aria-label="${esc(t("removeCourse"))}">${ICONS.x}</button>
       </div>
@@ -701,6 +802,8 @@ function renderRegisteredList(model) {
         <p class="registered-subtitle">${esc(t("registeredSubtitle"))}</p>
       </div>
     </div>
+    ${cohortCard}
+    ${seniorBanner}
     ${heroCallout}
     ${state.selected.length
       ? `<div class="reg-list">${items}</div>`
@@ -932,8 +1035,9 @@ function renderGridCell(day, slot, model) {
     : items.some((p) => p.conflict) ? "tt-cell--section" : "";
 
   const body = items.map((p) => {
+    const courseName = esc(tr(p.course.name));
     const title = (p.first || p.kind === "section")
-      ? `<strong class="tt-code">${esc(p.course.code || "")}</strong><span class="tt-cname">${esc(p.course.name)}</span>`
+      ? `<strong class="tt-code">${esc(p.course.code || "")}</strong><span class="tt-cname">${courseName}</span>`
       : `<strong class="tt-code">${esc(p.course.code || "")}</strong><span class="tt-cont">${esc(t("continuation"))}</span>`;
     return `
     <div class="tt-item tt-item--${p.kind} ${p.conflict ? "tt-item--clash-" + p.conflict : ""}">
@@ -957,11 +1061,11 @@ function renderConflict(c) {
   const slot = SLOTS.find((s) => s.n === c.slot);
 
   const items = c.items.map((p) => {
-    const mand = p.course.mandatoryFor.includes(state.dept);
+    const mand = p.course.mandatoryFor && p.course.mandatoryFor.includes(state.dept);
     return `
     <li>
       <span class="warn-kind warn-kind--${p.kind}">${p.kind === "lecture" ? esc(t("lectureWord")) : esc(t("sectionWord"))}</span>
-      <strong>${esc(p.course.code || "")}</strong> ${esc(p.course.name)} · ${esc(p.place)}
+      <strong>${esc(p.course.code || "")}</strong> ${esc(tr(p.course.name))} · ${esc(p.place)}
       ${p.doctor ? " · " + esc(p.doctor) : ""}${p.labels ? " · " + esc(p.labels.join("/")) : ""}
       <span class="badge ${mand ? "badge-mandatory" : "badge-optional"}">${esc(mand ? t("mandatoryShort") : t("optionalShort"))}</span>
     </li>`;
@@ -985,7 +1089,12 @@ function renderConflict(c) {
 }
 
 function renderTimetablePanel(model) {
-  const pending = state.selected.filter((i) => state.picks[i] == null).length;
+  const pending = state.selected.filter((i) => {
+    const s = typeof Timetable !== "undefined" && Timetable.getCourseSchedule
+      ? Timetable.getCourseSchedule(COURSES[i], i, state)
+      : COURSES[i];
+    return s?.sections?.length > 0 && state.picks[i] == null;
+  }).length;
   const hasConflicts = model.conflicts.length > 0;
 
   /* transposed grid: days = rows, Slot 1..7 = columns (both times on top) */
@@ -1112,6 +1221,14 @@ function renderPlanner() {
           <button type="button" data-view="grid" class="view-btn ${!asList ? "is-active" : ""}">${ICONS.grid}<span>${esc(t("viewGrid"))}</span></button>
           <button type="button" data-view="list" class="view-btn ${asList ? "is-active" : ""}">${ICONS.list}<span>${esc(t("viewList"))}</span></button>
         </div>
+        <div class="level-filter-pills" role="tablist" aria-label="level filters">
+          <button type="button" class="filter-pill ${state.catalogLevelFilter === "all" ? "is-active" : ""}" data-level="all">${esc(t("filterAllLevels"))}</button>
+          <button type="button" class="filter-pill ${state.catalogLevelFilter === "1" ? "is-active" : ""}" data-level="1">${esc(t("filterLevel1"))}</button>
+          <button type="button" class="filter-pill ${state.catalogLevelFilter === "2" ? "is-active" : ""}" data-level="2">${esc(t("filterLevel2"))}</button>
+          <button type="button" class="filter-pill ${state.catalogLevelFilter === "3" ? "is-active" : ""}" data-level="3">${esc(t("filterLevel3"))}</button>
+          <button type="button" class="filter-pill ${state.catalogLevelFilter === "4" ? "is-active" : ""}" data-level="4">${esc(t("filterLevel4"))}</button>
+          <button type="button" class="filter-pill ${state.catalogLevelFilter === "retake" ? "is-active" : ""}" data-level="retake">${esc(t("filterRetakes"))}</button>
+        </div>
       </header>
       ${groupHtml}
     </div>
@@ -1204,12 +1321,20 @@ function bindPlanner() {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   }));
 
+  $$(".filter-pill").forEach((pill) => {
+    pill.addEventListener("click", () => {
+      state.catalogLevelFilter = pill.dataset.level;
+      persist();
+      renderAll();
+    });
+  });
+
   $$(".course-check").forEach((box) => {
     box.addEventListener("change", () => {
       const idx = Number(box.dataset.idx);
       const course = COURSES[idx];
       if (box.checked) {
-        if (state.selected.length >= state.maxCourses) {
+        if (!canAddCourse(idx)) {
           box.checked = false;
           showToast(t("limitReached"));
           box.closest(".course-card")?.classList.add("shake");
@@ -1235,6 +1360,38 @@ function bindPlanner() {
     });
   });
 
+  $$(".cohort-pill").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const targetGroup = btn.getAttribute("data-group");
+      if (state.group === targetGroup) return;
+      state.group = targetGroup;
+      // Re-validate section picks for courses with groups
+      state.selected.forEach((idx) => {
+        const c = COURSES[idx];
+        if (c && c.hasGroups) {
+          const sched = Timetable.getCourseSchedule(c, idx, state);
+          const currentPick = state.picks[idx];
+          if (currentPick != null && !sched.sections[currentPick]) {
+            delete state.picks[idx];
+          }
+        }
+      });
+      persist();
+      renderAll();
+    });
+  });
+
+  $$(".btn-lec-grp").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const idx = Number(btn.getAttribute("data-idx"));
+      const targetGroup = btn.getAttribute("data-lecgroup");
+      state.lecturePicks = state.lecturePicks || {};
+      state.lecturePicks[idx] = targetGroup;
+      persist();
+      renderAll();
+    });
+  });
+
   $$(".section-select").forEach((sel) => {
     sel.addEventListener("change", () => {
       const idx = Number(sel.dataset.idx);
@@ -1244,8 +1401,11 @@ function bindPlanner() {
       } else {
         const pickIdx = Number(sel.value);
         state.picks[idx] = pickIdx;
+        const sched = typeof Timetable !== "undefined" && Timetable.getCourseSchedule
+          ? Timetable.getCourseSchedule(course, idx, state)
+          : null;
         if (typeof Analytics !== "undefined") {
-          const sec = course?.sections[pickIdx];
+          const sec = sched?.sections[pickIdx] || course?.sections[pickIdx];
           Analytics.trackSectionPicked(tr(course?.name), sec ? Timetable.sectionLabel(sec) : String(pickIdx));
         }
       }
@@ -1260,6 +1420,7 @@ function bindPlanner() {
       const course = COURSES[idx];
       state.selected = state.selected.filter((i) => i !== idx);
       delete state.picks[idx];
+      if (state.lecturePicks) delete state.lecturePicks[idx];
       if (typeof Analytics !== "undefined") {
         Analytics.trackCourseToggled(course?.code, tr(course?.name), false);
       }
