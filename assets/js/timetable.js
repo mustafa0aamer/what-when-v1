@@ -338,9 +338,12 @@ const Timetable = {
     });
 
     /* ---- 5. footer ---- */
-    const usedH = state.selected.length * APP_CONFIG.creditHoursPerCourse +
-      (state.project ? APP_CONFIG.project.creditHours : 0);
-    txt(`${state.dept} · ${usedH}/${state.hoursLimit}h · ${tr(APP_CONFIG.academicTerm)}`,
+    const usedH = state.selected.reduce((sum, idx) => {
+      const c = COURSES[idx];
+      return sum + (c && typeof c.creditHours === "number" ? c.creditHours : 3);
+    }, 0) + (state.project ? APP_CONFIG.project.creditHours : 0);
+    const deptDisplay = state.dept === "GEN" ? (state.isNewcomer ? tr({ ar: "مستجد", en: "Freshman" }) : "GEN") : state.dept;
+    txt(`${deptDisplay} · ${usedH}/${state.hoursLimit}h · ${tr(APP_CONFIG.academicTerm)}`,
         W / 2, H - footH + 16, { font: `10px ${F}`, color: C.muted, align: "center" });
     txt(t("footerNote"), W / 2, H - footH + 32, { font: `italic 9px ${F}`, color: C.muted, align: "center" });
 

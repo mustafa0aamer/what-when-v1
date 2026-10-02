@@ -1951,4 +1951,158 @@ select:focus, input[type="text"]:focus, input[type="number"]:focus {
   color: #ffffff;
 }
 
+/* ------------------------------------------------ Student Type Selector (Newcomer vs Returning) */
+.student-type-selector {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.student-type-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  padding: 1.15rem 1.25rem;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all .2s ease;
+  user-select: none;
+}
+
+.student-type-card input[type="radio"] {
+  margin-top: .25rem;
+  margin-inline-end: .85rem;
+  accent-color: var(--accent);
+  width: 1.15rem;
+  height: 1.15rem;
+  cursor: pointer;
+}
+
+.student-type-card:hover {
+  border-color: var(--accent-light, #14b8a6);
+  background: var(--surface-hover, #f8fafc);
+  transform: translateY(-1px);
+}
+
+.student-type-card.is-selected {
+  border-color: var(--accent);
+  background: rgba(15, 118, 110, 0.05);
+  box-shadow: 0 4px 14px rgba(15, 118, 110, 0.12);
+}
+
+.student-type-content {
+  flex: 1;
+}
+
+.student-type-title {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: .3rem;
+  flex-wrap: wrap;
+}
+
+.student-type-icon {
+  font-size: 1.25rem;
+}
+
+.student-type-desc {
+  margin: 0;
+  font-size: .84rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+/* Newcomer Onboarding Banner */
+.newcomer-banner-box {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(20, 184, 166, 0.12));
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: var(--radius-md);
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  animation: fadeIn .25s ease-out;
+}
+
+.newcomer-banner-header {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  margin-bottom: .5rem;
+  flex-wrap: wrap;
+}
+
+.newcomer-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  background: var(--accent-strong, #0f766e);
+  color: #ffffff;
+  font-size: .82rem;
+  font-weight: 700;
+  padding: .25rem .65rem;
+  border-radius: 9999px;
+}
+
+.newcomer-hours-pill {
+  display: inline-flex;
+  align-items: center;
+  background: #10b981;
+  color: #ffffff;
+  font-size: .82rem;
+  font-weight: 700;
+  padding: .25rem .65rem;
+  border-radius: 9999px;
+}
+
+.newcomer-banner-desc {
+  margin: 0;
+  font-size: .88rem;
+  color: var(--text);
+  line-height: 1.55;
+}
+
+/* Newcomer Catalog Banner */
+.newcomer-catalog-banner {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  background: linear-gradient(135deg, rgba(15, 118, 110, 0.08), rgba(20, 184, 166, 0.12));
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  padding: .9rem 1.15rem;
+  margin-top: .75rem;
+  width: 100%;
+}
+
+.newcomer-catalog-badge-row {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  flex-wrap: wrap;
+}
+
+.newcomer-banner-note {
+  font-weight: 700;
+  font-size: .86rem;
+  color: var(--accent-strong, #0f766e);
+}
+
+.newcomer-banner-sub {
+  margin: 0;
+  font-size: .84rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.highlight-limit {
+  color: var(--accent-strong, #0f766e);
+  font-weight: 800;
+}
+
+
 

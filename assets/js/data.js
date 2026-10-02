@@ -121,7 +121,8 @@ const ACADEMIC_BYLAWS = {
     return (Number(passedHours) || 0) >= APP_CONFIG.minProjectHours;
   },
 
-  calcBaseHours(gpa) {
+  calcBaseHours(gpa, isNewcomer = false) {
+    if (isNewcomer) return 16;
     const val = Number(gpa);
     if (isNaN(val) || val < 0) return 18;
     if (val >= APP_CONFIG.gpaThresholds.high) return 18;

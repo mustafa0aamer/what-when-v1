@@ -43,6 +43,7 @@ const persisted = Store.load();
 const state = {
   lang: persisted.lang || "ar",
   step: persisted.step || "setup",          // 'setup' | 'catalog'
+  isNewcomer: persisted.isNewcomer ?? false,// true for first-term freshmen (no GPA or hours)
   passedHours: persisted.passedHours != null ? Number(persisted.passedHours) : null,
   gpa: persisted.gpa != null ? Number(persisted.gpa) : null,
   level: persisted.level || (persisted.passedHours != null ? ACADEMIC_BYLAWS.calcLevel(persisted.passedHours) : 4),
@@ -113,6 +114,19 @@ function formatCreditBadge(c) {
 }
 
 function computeLimit() {
+  if (state.isNewcomer) {
+    state.passedHours = 0;
+    state.gpa = null;
+    state.level = 1;
+    state.dept = "GEN";
+    state.hoursLimit = 16;
+    state.extraHours = false;
+    state.project = false;
+    state.maxCourses = 6;
+    state.catalogLevelFilter = "1";
+    return;
+  }
+
   const hours = state.passedHours != null ? state.passedHours : 0;
   const gpa = state.gpa != null ? state.gpa : 0;
   state.level = ACADEMIC_BYLAWS.calcLevel(hours);
@@ -122,7 +136,7 @@ function computeLimit() {
     state.dept = "GEN";
   }
 
-  let limit = ACADEMIC_BYLAWS.calcBaseHours(gpa);
+  let limit = ACADEMIC_BYLAWS.calcBaseHours(gpa, state.isNewcomer);
   const eligibleOverload = ACADEMIC_BYLAWS.canOverload(hours, gpa);
   if (state.extraHours && eligibleOverload) {
     limit = APP_CONFIG.overload.maxHours; // 21h
@@ -146,6 +160,13 @@ function groupCourses() {
   const groups = new Map(order.map((d) => [d, []]));
 
   COURSES.forEach((course, idx) => {
+    // If student is a Newcomer (First Term): ONLY show Level 1 foundational courses (no retakes, no level 2/3/4)
+    if (state.isNewcomer) {
+      if (course.level !== 1 || course.isRetake) {
+        return;
+      }
+    }
+
     // If student is not specialized (< 45h), lock out Level 3 and Level 4 courses
     if (!isSpec && (course.level && course.level >= 3)) {
       return;
@@ -208,6 +229,8 @@ const ICONS = {
   hourglass: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>',
   fileText: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
   externalLink: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>',
+  userGraduate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/></svg>',
+  users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
 };
 
 /* -------------------------------------------------------------- Chrome */
@@ -291,17 +314,17 @@ function renderChrome() {
 
 /* ---------------------------------------------------------- Setup view */
 function renderSetup() {
+  const isNewcomer = state.isNewcomer ?? false;
   const hoursVal = state.passedHours != null ? state.passedHours : "";
   const gpaVal = state.gpa != null ? state.gpa : "";
   const initialHours = state.passedHours != null ? state.passedHours : 96;
   const initialGpa = state.gpa != null ? state.gpa : 2.5;
 
-  const currentLevel = ACADEMIC_BYLAWS.calcLevel(initialHours);
-  const isSpec = ACADEMIC_BYLAWS.isSpecialized(initialHours);
-  const canProj = ACADEMIC_BYLAWS.canTakeProject(initialHours);
-  const canOver = ACADEMIC_BYLAWS.canOverload(initialHours, initialGpa);
-  const requiresCohort = ACADEMIC_BYLAWS.requiresCohortGroup(initialHours);
-  const baseHours = ACADEMIC_BYLAWS.calcBaseHours(initialGpa);
+  const currentLevel = isNewcomer ? 1 : ACADEMIC_BYLAWS.calcLevel(initialHours);
+  const isSpec = isNewcomer ? false : ACADEMIC_BYLAWS.isSpecialized(initialHours);
+  const canProj = isNewcomer ? false : ACADEMIC_BYLAWS.canTakeProject(initialHours);
+  const canOver = isNewcomer ? false : ACADEMIC_BYLAWS.canOverload(initialHours, initialGpa);
+  const baseHours = ACADEMIC_BYLAWS.calcBaseHours(initialGpa, isNewcomer);
 
   const deptOptions = APP_CONFIG.departments.map((d) =>
     `<option value="${d}" ${state.dept === d ? "selected" : ""}>${esc(d)} — ${esc(tr(DEPT_NAMES[d]))}</option>`
@@ -309,7 +332,6 @@ function renderSetup() {
 
   const checked = (v) => (v === true ? "checked" : "");
   const projectChecked = (v) => (state.project === v ? "checked" : "");
-  const groupChecked = (g) => (state.group === g ? "checked" : "");
 
   return `
   <section class="card setup-card">
@@ -317,19 +339,45 @@ function renderSetup() {
     <p class="card-subtitle">${esc(t("setupSubtitle"))}</p>
 
     <form id="setupForm" novalidate>
-      <div class="form-grid-2">
-        <div class="field">
-          <label class="field-label" for="passedHours">${esc(t("passedHoursLabel"))}</label>
-          <input type="number" id="passedHours" min="0" max="180" step="1"
-                 placeholder="${esc(t("passedHoursPh"))}" value="${hoursVal}" required autofocus>
-          <p class="field-hint">${esc(t("passedHoursHint"))}</p>
-        </div>
+      <div class="student-type-selector" role="radiogroup" aria-label="Student Category">
+        <label class="student-type-card ${isNewcomer ? "is-selected" : ""}">
+          <input type="radio" name="studentType" value="newcomer" ${isNewcomer ? "checked" : ""}>
+          <div class="student-type-content">
+            <div class="student-type-title">
+              <span class="student-type-icon">${ICONS.userGraduate}</span>
+              <strong>${esc(t("studentTypeNewcomer"))}</strong>
+            </div>
+            <p class="student-type-desc">${esc(t("studentTypeNewcomerDesc"))}</p>
+          </div>
+        </label>
 
-        <div class="field">
-          <label class="field-label" for="gpaInput">${esc(t("gpaInputLabel"))}</label>
-          <input type="number" id="gpaInput" min="0" max="4.00" step="0.01"
-                 placeholder="${esc(t("gpaInputPh"))}" value="${gpaVal}" required>
-          <p class="field-hint">${esc(t("gpaHint"))}</p>
+        <label class="student-type-card ${!isNewcomer ? "is-selected" : ""}">
+          <input type="radio" name="studentType" value="returning" ${!isNewcomer ? "checked" : ""}>
+          <div class="student-type-content">
+            <div class="student-type-title">
+              <span class="student-type-icon">${ICONS.book}</span>
+              <strong>${esc(t("studentTypeReturning"))}</strong>
+            </div>
+            <p class="student-type-desc">${esc(t("studentTypeReturningDesc"))}</p>
+          </div>
+        </label>
+      </div>
+
+      <div id="returningStudentInputs" ${isNewcomer ? 'style="display:none;"' : ""}>
+        <div class="form-grid-2">
+          <div class="field">
+            <label class="field-label" for="passedHours">${esc(t("passedHoursLabel"))}</label>
+            <input type="number" id="passedHours" min="0" max="180" step="1"
+                   placeholder="${esc(t("passedHoursPh"))}" value="${hoursVal}">
+            <p class="field-hint">${esc(t("passedHoursHint"))}</p>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="gpaInput">${esc(t("gpaInputLabel"))}</label>
+            <input type="number" id="gpaInput" min="0" max="4.00" step="0.01"
+                   placeholder="${esc(t("gpaInputPh"))}" value="${gpaVal}">
+            <p class="field-hint">${esc(t("gpaHint"))}</p>
+          </div>
         </div>
       </div>
 
@@ -337,7 +385,7 @@ function renderSetup() {
         <div class="live-calc-row">
           <span class="live-calc-label">${esc(t("detectedLevel"))}</span>
           <span class="live-calc-value">
-            <span class="badge-level-tag" id="calcLevelBadge">${esc(t("level" + currentLevel))}</span>
+            <span class="badge-level-tag" id="calcLevelBadge">${esc(isNewcomer ? t("level1") : t("level" + currentLevel))}</span>
           </span>
         </div>
         <div class="live-calc-row">
@@ -351,7 +399,7 @@ function renderSetup() {
         <div class="live-calc-row">
           <span class="live-calc-label">${esc(t("gpaCalculatedLimit"))}</span>
           <span class="live-calc-value" id="calcLimitDisplay">
-            ${esc(t("gpaHoursDesc").replace("{h}", baseHours).replace("{c}", Math.floor(baseHours / 3)))}
+            ${esc(t("gpaHoursDesc").replace("{h}", isNewcomer ? 16 : baseHours))}
           </span>
         </div>
       </div>
@@ -365,7 +413,7 @@ function renderSetup() {
         <p class="field-hint">${esc(t("specializedNotice"))}</p>
       </div>
 
-      <div class="notice-box" id="preSpecNotice" ${!isSpec ? "" : 'style="display:none;"'}>
+      <div class="notice-box" id="preSpecNotice" ${!isSpec && !isNewcomer ? "" : 'style="display:none;"'}>
         ${ICONS.book} <span>${esc(t("notSpecializedNotice"))}</span>
       </div>
 
@@ -412,14 +460,33 @@ function bindSetup() {
   const extraHoursBox = $("#extraHoursBox");
   const extraHoursCheck = $("#extraHours");
   const overloadReasonText = $("#overloadReasonText");
+  const returningInputs = $("#returningStudentInputs");
 
   const calcLevelBadge = $("#calcLevelBadge");
   const calcSpecBadge = $("#calcSpecBadge");
   const calcLimitDisplay = $("#calcLimitDisplay");
 
   const updateCalculations = () => {
-    const rawHours = hoursInput.value.trim();
-    const rawGpa = gpaInput.value.trim();
+    const isNewcomer = form.querySelector('input[name="studentType"]:checked')?.value === "newcomer";
+
+    if (isNewcomer) {
+      if (calcLevelBadge) calcLevelBadge.textContent = t("level1");
+      if (calcSpecBadge) {
+        calcSpecBadge.className = "badge-spec-general";
+        calcSpecBadge.textContent = t("statusGeneral");
+      }
+      if (calcLimitDisplay) {
+        calcLimitDisplay.textContent = t("gpaHoursDesc").replace("{h}", 16);
+      }
+      if (deptField) deptField.style.display = "none";
+      if (preSpecNotice) preSpecNotice.style.display = "none";
+      if (projectField) projectField.style.display = "none";
+      if (extraHoursBox) extraHoursBox.style.display = "none";
+      return;
+    }
+
+    const rawHours = hoursInput?.value ? hoursInput.value.trim() : "";
+    const rawGpa = gpaInput?.value ? gpaInput.value.trim() : "";
 
     const hours = rawHours !== "" ? Math.max(0, Number(rawHours)) : 0;
     const gpa = rawGpa !== "" ? Math.max(0, Math.min(4.0, Number(rawGpa))) : 0;
@@ -428,8 +495,7 @@ function bindSetup() {
     const isSpec = ACADEMIC_BYLAWS.isSpecialized(hours);
     const canProj = ACADEMIC_BYLAWS.canTakeProject(hours);
     const canOver = ACADEMIC_BYLAWS.canOverload(hours, gpa);
-    const requiresCohort = ACADEMIC_BYLAWS.requiresCohortGroup(hours);
-    const baseHours = ACADEMIC_BYLAWS.calcBaseHours(gpa);
+    const baseHours = ACADEMIC_BYLAWS.calcBaseHours(gpa, false);
 
     // Update Live Badges
     if (calcLevelBadge) calcLevelBadge.textContent = t("level" + level);
@@ -438,9 +504,7 @@ function bindSetup() {
       calcSpecBadge.textContent = isSpec ? t("statusSpecialized") : t("statusGeneral");
     }
     if (calcLimitDisplay) {
-      calcLimitDisplay.textContent = t("gpaHoursDesc")
-        .replace("{h}", baseHours)
-        .replace("{c}", Math.floor(baseHours / 3));
+      calcLimitDisplay.textContent = t("gpaHoursDesc").replace("{h}", baseHours);
     }
 
     // Department field visibility
@@ -478,13 +542,62 @@ function bindSetup() {
     }
   };
 
-  hoursInput.addEventListener("input", updateCalculations);
-  gpaInput.addEventListener("input", updateCalculations);
+  const syncStudentTypeUI = () => {
+    const isNewcomer = form.querySelector('input[name="studentType"]:checked')?.value === "newcomer";
+    if (returningInputs) returningInputs.style.display = isNewcomer ? "none" : "";
+
+    form.querySelectorAll(".student-type-card").forEach((card) => {
+      const radio = card.querySelector('input[name="studentType"]');
+      if (radio && radio.checked) card.classList.add("is-selected");
+      else card.classList.remove("is-selected");
+    });
+
+    updateCalculations();
+  };
+
+  form.querySelectorAll('input[name="studentType"]').forEach((r) => {
+    r.addEventListener("change", syncStudentTypeUI);
+  });
+
+  if (hoursInput) hoursInput.addEventListener("input", updateCalculations);
+  if (gpaInput) gpaInput.addEventListener("input", updateCalculations);
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
-    const rawHours = hoursInput.value.trim();
-    const rawGpa = gpaInput.value.trim();
+    const isNewcomer = form.querySelector('input[name="studentType"]:checked')?.value === "newcomer";
+    state.isNewcomer = isNewcomer;
+
+    if (isNewcomer) {
+      state.passedHours = 0;
+      state.gpa = null;
+      state.level = 1;
+      state.dept = "GEN";
+      state.group = state.group || "A";
+      state.project = false;
+      state.extraHours = false;
+      state.hoursLimit = 16;
+      state.maxCourses = 6;
+      state.catalogLevelFilter = "1";
+      // Prune any selected courses that are not Level 1 foundational courses
+      state.selected = state.selected.filter((idx) => {
+        const c = COURSES[idx];
+        return c && c.level === 1 && !c.isRetake;
+      });
+      Object.keys(state.picks).forEach((k) => {
+        if (!state.selected.includes(Number(k))) {
+          delete state.picks[k];
+        }
+      });
+      state.step = "catalog";
+      computeLimit();
+      persist();
+      renderAll();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    const rawHours = hoursInput ? hoursInput.value.trim() : "";
+    const rawGpa = gpaInput ? gpaInput.value.trim() : "";
 
     if (rawHours === "" || isNaN(Number(rawHours)) || Number(rawHours) < 0 ||
         rawGpa === "" || isNaN(Number(rawGpa)) || Number(rawGpa) < 0 || Number(rawGpa) > 4.0) {
@@ -497,7 +610,6 @@ function bindSetup() {
     const gpa = Number(Number(rawGpa).toFixed(2));
     const level = ACADEMIC_BYLAWS.calcLevel(hours);
     const isSpec = ACADEMIC_BYLAWS.isSpecialized(hours);
-    const requiresCohort = ACADEMIC_BYLAWS.requiresCohortGroup(hours);
     const canProj = ACADEMIC_BYLAWS.canTakeProject(hours);
 
     state.passedHours = hours;
@@ -515,7 +627,7 @@ function bindSetup() {
       state.dept = "GEN";
     }
 
-    if (requiresCohort) {
+    if (level <= 2) {
       state.group = state.group || "A";
     }
 
@@ -581,6 +693,11 @@ function renderCourseCard(course, idx) {
   const pick = state.picks[idx] ?? null;
   const canAdd = canAddCourse(idx);
   const disabled = !isSelected && !canAdd;
+  const cost = course && typeof course.creditHours === "number" ? course.creditHours : 3;
+  const rem = Math.max(0, state.hoursLimit - usedHours());
+  const disabledTooltip = disabled
+    ? t("limitReachedRemaining").replace("{rem}", rem).replace("{cost}", cost).replace("{limit}", state.hoursLimit)
+    : "";
 
   const badges = [];
   if (isMandatory) {
@@ -613,7 +730,7 @@ function renderCourseCard(course, idx) {
 
   return `
   <div class="course-card ${isSelected ? "is-selected" : ""} ${disabled ? "is-disabled" : ""}">
-    <label class="course-check-row" ${disabled ? `title="${esc(t("limitReached"))}"` : ""}>
+    <label class="course-check-row" ${disabled ? `title="${esc(disabledTooltip)}"` : ""}>
       <input type="checkbox" class="course-check" data-idx="${idx}" ${isSelected ? "checked" : ""} ${disabled ? "disabled" : ""}>
       <div class="course-body">
         <div class="course-top">
@@ -660,7 +777,7 @@ function renderRegisteredList(model) {
     <div class="cohort-selector-card">
       <div class="cohort-selector-header">
         <div class="cohort-title-wrap">
-          <span class="cohort-icon">${ICONS.users || '👥'}</span>
+          <span class="cohort-icon">${ICONS.users}</span>
           <div>
             <h4 class="cohort-title">${esc(t("cohortSelectTitle"))}</h4>
             <p class="cohort-desc">${esc(t("cohortSelectDesc"))}</p>
@@ -687,7 +804,7 @@ function renderRegisteredList(model) {
   const seniorBanner = (isSenior && hasGroupCourses) ? `
     <div class="cohort-senior-banner">
       <div class="senior-banner-head">
-        <span class="senior-banner-icon">⚡</span>
+        <span class="senior-banner-icon">${ICONS.zap}</span>
         <div>
           <h4 class="senior-banner-title">${esc(t("seniorFlexTitle"))}</h4>
           <p class="senior-banner-desc">${esc(t("seniorFlexDesc"))}</p>
@@ -800,6 +917,10 @@ function renderRegisteredList(model) {
       <div class="registered-header-left">
         <h2 class="registered-title">${esc(t("registeredTitle"))}</h2>
         <p class="registered-subtitle">${esc(t("registeredSubtitle"))}</p>
+      </div>
+      <div class="registered-header-right">
+        <span class="badge badge-credit">${usedHours()} / ${state.hoursLimit} ${esc(t("creditHoursUnit"))}</span>
+        ${state.hoursLimit - usedHours() > 0 ? `<span class="badge badge-optional">${esc(t("creditHoursRemaining").replace("{rem}", state.hoursLimit - usedHours()))}</span>` : ""}
       </div>
     </div>
     ${cohortCard}
@@ -1183,7 +1304,7 @@ function renderPlanner() {
     <div class="summary-bar">
       <div class="summary-item">
         <span class="summary-label">${esc(t("levelLabel") || "المستوى")}</span>
-        <span class="summary-value">${esc(t("levelPrefix"))} ${state.level}${state.group ? " · " + esc(t("groupTag").replace("{g}", state.group)) : ""}</span>
+        <span class="summary-value">${state.isNewcomer ? esc(t("newcomerBadge")) : esc(t("levelPrefix")) + " " + state.level}${state.group ? " · " + esc(t("groupTag").replace("{g}", state.group)) : ""}</span>
       </div>
       <div class="summary-item">
         <span class="summary-label">${esc(t("deptLabel"))}</span>
@@ -1191,19 +1312,19 @@ function renderPlanner() {
       </div>
       <div class="summary-item">
         <span class="summary-label">GPA</span>
-        <span class="summary-value">${state.gpa != null ? Number(state.gpa).toFixed(2) : "—"}</span>
+        <span class="summary-value">${state.isNewcomer ? "— (" + esc(t("newcomerGpaTag")) + ")" : (state.gpa != null ? Number(state.gpa).toFixed(2) : "—")}</span>
       </div>
       <div class="summary-item">
-        <span class="summary-label">${esc(t("yourLimit"))}</span>
-        <span class="summary-value">${state.maxCourses} ${esc(t("coursesUnit"))}</span>
-      </div>
-      <div class="summary-item">
-        <span class="summary-label">${esc(t("selectedLabel"))}</span>
-        <span class="summary-value" id="selectedCounter">${esc(t("selectedOf").replace("{selected}", state.selected.length).replace("{max}", state.maxCourses))}</span>
+        <span class="summary-label">${esc(t("yourHoursLimit"))}</span>
+        <span class="summary-value highlight-limit">${state.hoursLimit} ${esc(t("creditHoursUnit"))}</span>
       </div>
       <div class="summary-item">
         <span class="summary-label">${esc(t("hoursLabel"))}</span>
-        <span class="summary-value">${usedHours()} / ${state.hoursLimit}</span>
+        <span class="summary-value ${usedHours() > state.hoursLimit ? "text-danger" : ""}">${usedHours()} / ${state.hoursLimit} ${esc(t("creditHoursUnitShort"))}</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">${esc(t("selectedLabel"))}</span>
+        <span class="summary-value" id="selectedCounter">${state.selected.length} ${esc(t("coursesUnit"))}</span>
       </div>
       <div class="summary-nav">
         <button class="btn btn-ghost btn-small" data-goto="#catalog" type="button">${ICONS.book}<span>${esc(t("navCourses"))}</span></button>
@@ -1221,14 +1342,16 @@ function renderPlanner() {
           <button type="button" data-view="grid" class="view-btn ${!asList ? "is-active" : ""}">${ICONS.grid}<span>${esc(t("viewGrid"))}</span></button>
           <button type="button" data-view="list" class="view-btn ${asList ? "is-active" : ""}">${ICONS.list}<span>${esc(t("viewList"))}</span></button>
         </div>
-        <div class="level-filter-pills" role="tablist" aria-label="level filters">
-          <button type="button" class="filter-pill ${state.catalogLevelFilter === "all" ? "is-active" : ""}" data-level="all">${esc(t("filterAllLevels"))}</button>
-          <button type="button" class="filter-pill ${state.catalogLevelFilter === "1" ? "is-active" : ""}" data-level="1">${esc(t("filterLevel1"))}</button>
-          <button type="button" class="filter-pill ${state.catalogLevelFilter === "2" ? "is-active" : ""}" data-level="2">${esc(t("filterLevel2"))}</button>
-          <button type="button" class="filter-pill ${state.catalogLevelFilter === "3" ? "is-active" : ""}" data-level="3">${esc(t("filterLevel3"))}</button>
-          <button type="button" class="filter-pill ${state.catalogLevelFilter === "4" ? "is-active" : ""}" data-level="4">${esc(t("filterLevel4"))}</button>
-          <button type="button" class="filter-pill ${state.catalogLevelFilter === "retake" ? "is-active" : ""}" data-level="retake">${esc(t("filterRetakes"))}</button>
-        </div>
+        ${state.isNewcomer ? "" : `
+          <div class="level-filter-pills" role="tablist" aria-label="level filters">
+            <button type="button" class="filter-pill ${state.catalogLevelFilter === "all" ? "is-active" : ""}" data-level="all">${esc(t("filterAllLevels"))}</button>
+            <button type="button" class="filter-pill ${state.catalogLevelFilter === "1" ? "is-active" : ""}" data-level="1">${esc(t("filterLevel1"))}</button>
+            <button type="button" class="filter-pill ${state.catalogLevelFilter === "2" ? "is-active" : ""}" data-level="2">${esc(t("filterLevel2"))}</button>
+            <button type="button" class="filter-pill ${state.catalogLevelFilter === "3" ? "is-active" : ""}" data-level="3">${esc(t("filterLevel3"))}</button>
+            <button type="button" class="filter-pill ${state.catalogLevelFilter === "4" ? "is-active" : ""}" data-level="4">${esc(t("filterLevel4"))}</button>
+            <button type="button" class="filter-pill ${state.catalogLevelFilter === "retake" ? "is-active" : ""}" data-level="retake">${esc(t("filterRetakes"))}</button>
+          </div>
+        `}
       </header>
       ${groupHtml}
     </div>
@@ -1336,7 +1459,13 @@ function bindPlanner() {
       if (box.checked) {
         if (!canAddCourse(idx)) {
           box.checked = false;
-          showToast(t("limitReached"));
+          const cost = course && typeof course.creditHours === "number" ? course.creditHours : 3;
+          const rem = Math.max(0, state.hoursLimit - usedHours());
+          const msg = t("limitReachedRemaining")
+            .replace("{rem}", rem)
+            .replace("{cost}", cost)
+            .replace("{limit}", state.hoursLimit);
+          showToast(msg);
           box.closest(".course-card")?.classList.add("shake");
           setTimeout(() => box.closest(".course-card")?.classList.remove("shake"), 400);
           return;
