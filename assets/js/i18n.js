@@ -143,6 +143,13 @@ const STRINGS = {
     optBottleneckPairwise: "تعارض حاد بين سكاشن مادتي {c1} و {c2} — جميع مواعيد سكاشنهما تتقاطع زمنياً معاً. لن تتمكن من تسجيل كلتيهما معاً بنفس السكاشن المتاحة.",
     optBottleneckGeneric: "لا توجد أي توليفة سكاشن تجمع هذه المواد دون تعارض في الوقت. جرب استبدال إحدى المواد بمادة أخرى.",
 
+    officialScheduleBtn: "الجدول الرسمي ({v})",
+    scheduleModalTitle: "جدول المحاضرات والسكاشن الرسمي",
+    scheduleModalSubtitle: "النسخة المعتمدة ({v}) — تصفح الجدول الكامل لجميع الفرق والأقسام، أو افتحه في Google Drive",
+    openInDrive: "فتح في Google Drive",
+    closeScheduleModal: "إغلاق",
+    scheduleViewerFallback: "إذا لم يظهر الجدول أعلاه، يمكنك تصفحه مباشرة عبر الرابط الخارجي:",
+
     footerNote: "أداة تخطيط غير رسمية — يجب مراجعة الجداول الرسمية المعتمدة من الكلية قبل التسجيل",
     whatsappAria: "تواصل مع المطور عبر واتساب",
     brandHome: "الصفحة الرئيسية",
@@ -287,6 +294,13 @@ const STRINGS = {
     optBottleneckSections: "All sections of {c1} clash with fixed lectures of your other chosen courses. Consider swapping an elective.",
     optBottleneckPairwise: "Severe bottleneck between sections of {c1} and {c2} — all available sections overlap. You cannot register both together.",
     optBottleneckGeneric: "No section assignment exists without overlapping time slots. Try replacing one of your elective courses.",
+
+    officialScheduleBtn: "Official Schedule ({v})",
+    scheduleModalTitle: "Official College Timetable",
+    scheduleModalSubtitle: "Approved Version ({v}) — browse courses and sections across all levels or open in Google Drive",
+    openInDrive: "Open in Google Drive",
+    closeScheduleModal: "Close",
+    scheduleViewerFallback: "If the document preview doesn't load above, open it directly via Google Drive:",
 
     footerNote: "An unofficial planning tool — always verify with the official faculty schedules before registering",
     whatsappAria: "Contact the developer on WhatsApp",

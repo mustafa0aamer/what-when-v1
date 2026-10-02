@@ -83,6 +83,15 @@ const APP_CONFIG = {
     minGpaLevel4: 2.0,
   },
 
+  // Official college timetable published PDF (Google Drive embeddable)
+  officialSchedule: {
+    version: "V3",
+    fileId: "1BGjzkHEeFkHhCvGIq9uIP-AkRlHLm-IH",
+    previewUrl: "https://drive.google.com/file/d/1BGjzkHEeFkHhCvGIq9uIP-AkRlHLm-IH/preview",
+    shareUrl: "https://drive.google.com/file/d/1BGjzkHEeFkHhCvGIq9uIP-AkRlHLm-IH/view?usp=sharing",
+    lastUpdated: "2026-10",
+  },
+
   // Graduation project: requires 85+ passed hours, takes 3h toward credit limit
   project: {
     creditHours: 3,

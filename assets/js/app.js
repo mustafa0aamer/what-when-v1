@@ -65,6 +65,11 @@ const optState = {
   appliedScenarioId: null,
 };
 
+/* Official Schedule Viewer Modal State */
+const schedModalState = {
+  isOpen: false,
+};
+
 function persist() { Store.save(state); }
 
 /* ------------------------------------------------------------- Utilities */
@@ -166,6 +171,8 @@ const ICONS = {
   coffee: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>',
   alertTriangle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
   hourglass: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>',
+  fileText: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
+  externalLink: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>',
 };
 
 /* -------------------------------------------------------------- Chrome */
@@ -173,6 +180,9 @@ function renderChrome() {
   document.documentElement.lang = state.lang;
   document.documentElement.dir = state.lang === "ar" ? "rtl" : "ltr";
   document.title = tr(APP_CONFIG.toolName) + " | " + APP_CONFIG.toolName.en;
+
+  const sched = APP_CONFIG.officialSchedule;
+  const schedBtnLabel = t("officialScheduleBtn").replace("{v}", sched.version);
 
   $("#appHeader").innerHTML = `
     <div class="header-inner">
@@ -184,6 +194,11 @@ function renderChrome() {
         </div>
       </a>
       <div class="header-actions">
+        <button class="schedule-header-btn" id="openScheduleModalBtn" type="button" title="${esc(schedBtnLabel)}">
+          ${ICONS.fileText}
+          <span>${esc(schedBtnLabel)}</span>
+          <span class="schedule-version-badge">${esc(sched.version)}</span>
+        </button>
         <button class="icon-btn" id="langToggle" type="button">${esc(t("langToggle"))}</button>
       </div>
     </div>`;
@@ -193,6 +208,14 @@ function renderChrome() {
     brandLink.addEventListener("click", (e) => {
       e.preventDefault();
       goBackToSetup();
+    });
+  }
+
+  const schedModalBtn = $("#openScheduleModalBtn");
+  if (schedModalBtn) {
+    schedModalBtn.addEventListener("click", () => {
+      schedModalState.isOpen = true;
+      renderAll();
     });
   }
 
@@ -973,6 +996,11 @@ function renderTimetablePanel(model) {
             ? `${ICONS.alert}<span>${model.conflicts.length} ${esc(t("conflictsUnit"))}</span>`
             : `${ICONS.check}<span>${esc(t("noConflicts"))}</span>`}
         </span>
+        <button class="btn btn-ghost btn-small open-schedule-trigger" type="button"
+                title="${esc(t("officialScheduleBtn").replace("{v}", APP_CONFIG.officialSchedule.version))}">
+          ${ICONS.fileText}
+          <span>${esc(t("officialScheduleBtn").replace("{v}", APP_CONFIG.officialSchedule.version))}</span>
+        </button>
         <button class="btn btn-ghost btn-small" id="exportBtn" type="button">${ICONS.download}<span>${esc(t("exportBtn"))}</span></button>
       </div>
     </div>
@@ -1233,6 +1261,13 @@ function bindPlanner() {
     });
   });
 
+  $$(".open-schedule-trigger").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      schedModalState.isOpen = true;
+      renderAll();
+    });
+  });
+
   const exportBtn = $("#exportBtn");
   const exportPanel = $("#exportPanel");
   if (exportBtn) exportBtn.addEventListener("click", () => { exportPanel.hidden = !exportPanel.hidden; });
@@ -1249,12 +1284,80 @@ function bindPlanner() {
   });
 }
 
+/* ------------------------------------------- Official Schedule Modal View */
+function renderScheduleModal() {
+  if (!schedModalState.isOpen) return "";
+
+  const sched = APP_CONFIG.officialSchedule;
+  const versionTitle = t("officialScheduleBtn").replace("{v}", sched.version);
+  const modalSub = t("scheduleModalSubtitle").replace("{v}", sched.version);
+
+  return `
+  <div class="modal-backdrop is-open" id="scheduleModal">
+    <div class="schedule-modal-card" role="dialog" aria-modal="true" aria-labelledby="scheduleModalTitle">
+      <div class="schedule-modal-header">
+        <div class="schedule-modal-title-group">
+          <h2 class="schedule-modal-title" id="scheduleModalTitle">
+            ${ICONS.fileText}
+            <span>${esc(t("scheduleModalTitle"))}</span>
+            <span class="schedule-version-badge">${esc(sched.version)}</span>
+          </h2>
+          <p class="schedule-modal-subtitle">${esc(modalSub)}</p>
+        </div>
+        <div class="schedule-modal-actions">
+          <a class="btn btn-ghost btn-small" href="${esc(sched.shareUrl)}" target="_blank" rel="noopener">
+            ${ICONS.externalLink}<span>${esc(t("openInDrive"))}</span>
+          </a>
+          <button class="modal-close-btn" id="closeScheduleModalBtn" type="button" aria-label="${esc(t("closeScheduleModal"))}">${ICONS.x}</button>
+        </div>
+      </div>
+      <div class="schedule-iframe-container">
+        <iframe src="${esc(sched.previewUrl)}" class="schedule-iframe" title="${esc(versionTitle)}" allow="autoplay" loading="lazy"></iframe>
+      </div>
+      <div class="schedule-modal-footer">
+        <span>${esc(t("scheduleViewerFallback"))}</span>
+        <a href="${esc(sched.shareUrl)}" target="_blank" rel="noopener">
+          ${esc(sched.shareUrl)}
+        </a>
+      </div>
+    </div>
+  </div>`;
+}
+
+function bindScheduleModal() {
+  const modal = $("#scheduleModal");
+  if (!modal) return;
+
+  const closeBtn = $("#closeScheduleModalBtn");
+  if (closeBtn) {
+    closeBtn.addEventListener("click", () => {
+      schedModalState.isOpen = false;
+      renderAll();
+    });
+  }
+
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      schedModalState.isOpen = false;
+      renderAll();
+    }
+  });
+
+  const onKeyDown = (e) => {
+    if (e.key === "Escape" && schedModalState.isOpen) {
+      schedModalState.isOpen = false;
+      document.removeEventListener("keydown", onKeyDown);
+      renderAll();
+    }
+  };
+  document.addEventListener("keydown", onKeyDown);
+}
+
 /* -------------------------------------------------------------- Render */
 function renderAll() {
   renderChrome();
   const app = $("#app");
   if (state.step === "catalog" && state.maxCourses === 0) computeLimit();
-  if (state.step === "catalog" && !state.creditOk) state.step = "notready";
 
   if (state.step === "notready") {
     app.innerHTML = renderNotReady();
@@ -1265,6 +1368,17 @@ function renderAll() {
   } else {
     app.innerHTML = renderSetup();
     bindSetup();
+  }
+
+  // Handle Official Schedule Modal
+  const existingSchedModal = $("#scheduleModal");
+  if (schedModalState.isOpen) {
+    if (!existingSchedModal) {
+      document.body.insertAdjacentHTML("beforeend", renderScheduleModal());
+      bindScheduleModal();
+    }
+  } else {
+    if (existingSchedModal) existingSchedModal.remove();
   }
 }
 

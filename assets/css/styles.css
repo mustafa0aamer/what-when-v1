@@ -1477,4 +1477,123 @@ select:focus, input[type="text"]:focus, input[type="number"]:focus {
   line-height: 1.55;
 }
 
+/* Official Schedule Modal */
+.schedule-modal-card {
+  max-width: 1100px;
+  width: 95vw;
+  height: 90vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: 0 20px 40px -10px rgba(15, 23, 42, .25);
+  overflow: hidden;
+  padding: 0;
+}
+.schedule-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.4rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.schedule-modal-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+}
+.schedule-modal-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+.schedule-modal-subtitle {
+  margin: 0;
+  font-size: .8rem;
+  color: var(--text-muted);
+}
+.schedule-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+.schedule-version-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: .2rem .55rem;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .5px;
+}
+.schedule-iframe-container {
+  flex: 1;
+  min-height: 0;
+  background: #202124;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.schedule-iframe {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  border: 0;
+  display: block;
+}
+.schedule-modal-footer {
+  padding: .65rem 1.4rem;
+  background: var(--surface-soft);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: .82rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.schedule-modal-footer a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: underline;
+}
+.schedule-header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .45rem .8rem;
+  font-size: .84rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+  transition: all .15s;
+}
+.schedule-header-btn:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+@media (max-width: 600px) {
+  .schedule-header-btn span {
+    display: none;
+  }
+  .schedule-modal-card {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+  }
+}
+
 
