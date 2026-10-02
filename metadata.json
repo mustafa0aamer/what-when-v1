@@ -1,0 +1,8 @@
+{
+  "name": "هجدول | What When",
+  "description": "هجدول | What When — أداة تخطيط الجدول الدراسي",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

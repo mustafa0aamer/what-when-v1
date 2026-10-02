@@ -1,11 +1,75 @@
-<div align="center">
+# What When | إيه امتا
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+An unofficial study-schedule planning tool for the Faculty of Computers & AI (Cairo University).
+Arabic-first with an English toggle, RTL/LTR aware, ready for GitHub Pages.
 
-  <h1>Built with AI Studio</h2>
+> 📖 **Comprehensive System Documentation:** For full details on the academic bylaws, mathematical Operations Research optimization model, campus distance matrix, technical architecture, and development history, see **[SYSTEM-ARCHITECTURE-AND-LOGIC.md](./SYSTEM-ARCHITECTURE-AND-LOGIC.md)**.
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+## Key Features
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+- **Credit Limit & Bylaw Engine:** Automatically calculates maximum allowable courses based on passed credit hours ($\ge 96$ for Level 4), cumulative GPA, graduation project 3-credit hour offset, and 21-hour petition rules.
+- **Bilingual & RTL/LTR:** Native Arabic and English support with responsive typography (IBM Plex Sans Arabic & Inter).
+- **Interactive Timetable & Conflict Engine:** Transposed 2D grid (Saturday–Thursday $\times$ Slots 1–7) with instant classification of Hard Lecture Clashes (red) vs Soft Section Clashes (yellow).
+- **Operations Research (OR) Goal-Based Optimizer:** Client-side CSP/COP solver that searches thousands of schedule combinations in $< 20\text{ ms}$, optimizing across 6 real-world scenarios (minimal walking distance across Cairo University facilities, compact days without idle gaps, maximum free days, early morning focus, late afternoon start, or worst-case stress test).
+- **Campus Distance Matrix:** Accurately models walking strain across 5 distinct campus zones ($Z_1$ FSSR to $Z_5$ Ben-ElSarayat) with penalty multipliers for tight transitions.
+- **Irreducible Inconsistent Subsystem (IIS) Diagnostics:** Pinpoints the exact clashing course pairs when no conflict-free combination exists.
+- **High-DPI Canvas PNG Export:** Generates crisp schedule images in Full or Compact (occupied-only) layouts.
+- **Zero-Emoji Vector Design:** Professional interface built with bespoke inline SVGs.
 
-</div>
+## Run it
+
+It's a fully static site — no build step, no dependencies.
+
+```bash
+# local preview
+npx serve .
+
+# or simply open index.html in a browser
+```
+
+## Deploy on GitHub Pages
+
+1. Create a repository and push these files to the `main` branch.
+2. In the repo: **Settings → Pages → Source: Deploy from a branch → `main` / root**.
+3. The site goes live at `https://<username>.github.io/<repo>/`.
+
+## Project structure
+
+```
+index.html              entry point
+assets/
+  css/styles.css        design tokens + all styles (palette lives in :root)
+  js/data.js            ★ ALL editable data: courses, slots, GPA rules, WhatsApp, name
+  js/i18n.js            every UI label in Arabic & English
+  js/app.js             application logic (state + renderers)
+```
+
+## Editing the data (until the admin page ships in Phase 3)
+
+Everything variable lives in `assets/js/data.js`:
+
+- `APP_CONFIG.toolName` — the tool's name (Arabic + English)
+- `APP_CONFIG.whatsapp` — the contact number / link
+- `APP_CONFIG.gpaRules` — GPA ranges → max credit hours
+- `APP_CONFIG.extraHours` — the optional 21-hour increase
+- `APP_CONFIG.project` — graduation project credit hours
+- `SLOTS` / `DAYS` — the numbered time grid (Slot 1..7)
+- `COURSES` — every course: code, department, level, mandatory-for,
+  lectures (`day + slots range + place + doctor`) and sections
+  (`day + single slot + place + section labels`)
+
+### Transcription flags
+
+Entries marked with `[?]` in `data.js` were ambiguous in the source PDF
+(scrambled two-column pages or repeated section numbers) — verify them
+against the official schedule and correct them in `data.js` directly.
+
+## Data notes
+
+- Only courses present in the official schedule PDF are listed (the filter).
+- Mandatory flags come from the bylaws excerpt (CS / IT / IS / DS).
+  The AI mandatory list was not available yet — all AI courses are treated
+  as optional until you add the flag in `data.js`.
+- "Operating Systems" is listed as **CS342** (Advanced Operating Systems) in the bylaws.
+
+
