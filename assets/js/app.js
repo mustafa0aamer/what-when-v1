@@ -10,22 +10,24 @@
 
 /* ------------------------------------------------------------------ Store */
 const Store = {
-  KEY: "whatwhen-state-v3",
+  KEY: "whatwhen-state-v4",
   load() {
     try {
       const saved = JSON.parse(localStorage.getItem(this.KEY));
       if (saved) return saved;
-      // Fallback/migrate from v2 if present
-      const v2 = JSON.parse(localStorage.getItem("whatwhen-state-v2"));
-      if (v2) {
-        // Keep user preferences (lang, dept, gpa) but clear stale picks
+      // Fallback/migrate from v3 or earlier if present
+      const v3 = JSON.parse(localStorage.getItem("whatwhen-state-v3"));
+      if (v3) {
         return {
-          lang: v2.lang,
-          dept: v2.dept,
-          creditOk: v2.creditOk,
-          project: v2.project,
-          gpaRuleId: v2.gpaRuleId,
-          extraHours: v2.extraHours,
+          lang: v3.lang || "ar",
+          dept: v3.dept || "CS",
+          passedHours: 96,
+          gpa: 2.5,
+          project: v3.project ?? false,
+          extraHours: v3.extraHours ?? false,
+          selected: v3.selected || [],
+          picks: v3.picks || {},
+          catalogView: v3.catalogView || "grid",
         };
       }
       return {};
@@ -40,12 +42,14 @@ const Store = {
 const persisted = Store.load();
 const state = {
   lang: persisted.lang || "ar",
-  step: persisted.step || "setup",          // 'setup' | 'notready' | 'catalog'
-  dept: persisted.dept || null,
-  creditOk: persisted.creditOk ?? null,
-  project: persisted.project ?? null,
-  gpaRuleId: persisted.gpaRuleId || null,
-  extraHours: persisted.extraHours ?? false,
+  step: persisted.step || "setup",          // 'setup' | 'catalog'
+  passedHours: persisted.passedHours != null ? Number(persisted.passedHours) : null,
+  gpa: persisted.gpa != null ? Number(persisted.gpa) : null,
+  level: persisted.level || (persisted.passedHours != null ? ACADEMIC_BYLAWS.calcLevel(persisted.passedHours) : 4),
+  group: persisted.group || null,           // 'A' | 'B' | null (for levels 1 & 2)
+  dept: persisted.dept || null,             // 'CS' | 'IT' | 'IS' | 'DS' | 'AI' | 'GEN'
+  project: persisted.project ?? false,      // only allowed if passedHours >= 85
+  extraHours: persisted.extraHours ?? false,// only allowed if canOverload
   maxCourses: persisted.maxCourses || 0,
   hoursLimit: persisted.hoursLimit || 0,
   selected: persisted.selected || [],       // array of course indexes
@@ -79,21 +83,47 @@ function usedHours() {
 }
 
 function computeLimit() {
-  const rule = APP_CONFIG.gpaRules.find((r) => r.id === state.gpaRuleId);
-  if (!rule) return;
-  let hours = rule.maxHours;
-  if (state.extraHours && rule.minGpa >= APP_CONFIG.extraHours.requiresGpa) {
-    hours = APP_CONFIG.extraHours.maxHours;
+  const hours = state.passedHours != null ? state.passedHours : 0;
+  const gpa = state.gpa != null ? state.gpa : 0;
+  state.level = ACADEMIC_BYLAWS.calcLevel(hours);
+
+  // If student hasn't reached specialization (< 45h), department is GEN
+  if (!ACADEMIC_BYLAWS.isSpecialized(hours)) {
+    state.dept = "GEN";
   }
-  state.hoursLimit = hours;
-  const usable = hours - (state.project ? APP_CONFIG.project.creditHours : 0);
+
+  let limit = ACADEMIC_BYLAWS.calcBaseHours(gpa);
+  const eligibleOverload = ACADEMIC_BYLAWS.canOverload(hours, gpa);
+  if (state.extraHours && eligibleOverload) {
+    limit = APP_CONFIG.overload.maxHours; // 21h
+  } else if (!eligibleOverload) {
+    state.extraHours = false;
+  }
+
+  // Project eligibility check
+  if (!ACADEMIC_BYLAWS.canTakeProject(hours)) {
+    state.project = false;
+  }
+
+  state.hoursLimit = limit;
+  const usable = limit - (state.project ? APP_CONFIG.project.creditHours : 0);
   state.maxCourses = Math.max(0, Math.floor(usable / APP_CONFIG.creditHoursPerCourse));
 }
 
 function groupCourses() {
+  const isSpec = state.passedHours != null ? ACADEMIC_BYLAWS.isSpecialized(state.passedHours) : true;
   const order = [...APP_CONFIG.departments, "GEN"];
   const groups = new Map(order.map((d) => [d, []]));
-  COURSES.forEach((course, idx) => groups.get(course.dept).push({ course, idx }));
+
+  COURSES.forEach((course, idx) => {
+    // If student is not specialized (< 45h), lock out Level 3 and Level 4 courses
+    if (!isSpec && (course.level && course.level >= 3)) {
+      return;
+    }
+    const targetDept = groups.has(course.dept) ? course.dept : "GEN";
+    groups.get(targetDept).push({ course, idx });
+  });
+
   return order
     .map((dept) => ({ dept, items: groups.get(dept) }))
     .filter((g) => g.items.length > 0);
@@ -200,17 +230,25 @@ function renderChrome() {
 
 /* ---------------------------------------------------------- Setup view */
 function renderSetup() {
+  const hoursVal = state.passedHours != null ? state.passedHours : "";
+  const gpaVal = state.gpa != null ? state.gpa : "";
+  const initialHours = state.passedHours != null ? state.passedHours : 96;
+  const initialGpa = state.gpa != null ? state.gpa : 2.5;
+
+  const currentLevel = ACADEMIC_BYLAWS.calcLevel(initialHours);
+  const isSpec = ACADEMIC_BYLAWS.isSpecialized(initialHours);
+  const canProj = ACADEMIC_BYLAWS.canTakeProject(initialHours);
+  const canOver = ACADEMIC_BYLAWS.canOverload(initialHours, initialGpa);
+  const requiresCohort = ACADEMIC_BYLAWS.requiresCohortGroup(initialHours);
+  const baseHours = ACADEMIC_BYLAWS.calcBaseHours(initialGpa);
+
   const deptOptions = APP_CONFIG.departments.map((d) =>
     `<option value="${d}" ${state.dept === d ? "selected" : ""}>${esc(d)} — ${esc(tr(DEPT_NAMES[d]))}</option>`
   ).join("");
 
-  const gpaOptions = APP_CONFIG.gpaRules.map((r) =>
-    `<option value="${r.id}" ${state.gpaRuleId === r.id ? "selected" : ""}>${esc(tr(r.label))} — ${esc(tr(r.desc))}</option>`
-  ).join("");
-
   const checked = (v) => (v === true ? "checked" : "");
-  const creditChecked = (v) => (state.creditOk === v ? "checked" : "");
   const projectChecked = (v) => (state.project === v ? "checked" : "");
+  const groupChecked = (g) => (state.group === g ? "checked" : "");
 
   return `
   <section class="card setup-card">
@@ -218,29 +256,74 @@ function renderSetup() {
     <p class="card-subtitle">${esc(t("setupSubtitle"))}</p>
 
     <form id="setupForm" novalidate>
-      <div class="field">
-        <label class="field-label" for="dept">${esc(t("deptLabel"))}</label>
-        <select id="dept" required>
-          <option value="" disabled ${state.dept ? "" : "selected"}>${esc(t("deptPlaceholder"))}</option>
-          ${deptOptions}
-        </select>
-      </div>
+      <div class="form-grid-2">
+        <div class="field">
+          <label class="field-label" for="passedHours">${esc(t("passedHoursLabel"))}</label>
+          <input type="number" id="passedHours" min="0" max="180" step="1"
+                 placeholder="${esc(t("passedHoursPh"))}" value="${hoursVal}" required autofocus>
+          <p class="field-hint">${esc(t("passedHoursHint"))}</p>
+        </div>
 
-      <div class="field">
-        <span class="field-label">${esc(t("creditLabel"))}</span>
-        <div class="choice-row">
-          <label class="choice">
-            <input type="radio" name="credit" value="ok" ${creditChecked(true)}>
-            <span>${esc(t("creditOk"))}</span>
-          </label>
-          <label class="choice">
-            <input type="radio" name="credit" value="low" ${creditChecked(false)}>
-            <span>${esc(t("creditLow"))}</span>
-          </label>
+        <div class="field">
+          <label class="field-label" for="gpaInput">${esc(t("gpaInputLabel"))}</label>
+          <input type="number" id="gpaInput" min="0" max="4.00" step="0.01"
+                 placeholder="${esc(t("gpaInputPh"))}" value="${gpaVal}" required>
+          <p class="field-hint">${esc(t("gpaHint"))}</p>
         </div>
       </div>
 
-      <div class="field">
+      <div class="live-calc-box" id="liveCalcBox">
+        <div class="live-calc-row">
+          <span class="live-calc-label">${esc(t("detectedLevel"))}</span>
+          <span class="live-calc-value">
+            <span class="badge-level-tag" id="calcLevelBadge">${esc(t("level" + currentLevel))}</span>
+          </span>
+        </div>
+        <div class="live-calc-row">
+          <span class="live-calc-label">${esc(state.lang === "ar" ? "حالة التخصص:" : "Specialization Stage:")}</span>
+          <span class="live-calc-value">
+            <span class="${isSpec ? "badge-spec-active" : "badge-spec-general"}" id="calcSpecBadge">
+              ${esc(isSpec ? t("statusSpecialized") : t("statusGeneral"))}
+            </span>
+          </span>
+        </div>
+        <div class="live-calc-row">
+          <span class="live-calc-label">${esc(t("gpaCalculatedLimit"))}</span>
+          <span class="live-calc-value" id="calcLimitDisplay">
+            ${esc(t("gpaHoursDesc").replace("{h}", baseHours).replace("{c}", Math.floor(baseHours / 3)))}
+          </span>
+        </div>
+      </div>
+
+      <div class="field" id="deptField" ${isSpec ? "" : 'style="display:none;"'}>
+        <label class="field-label" for="dept">${esc(t("deptLabel"))}</label>
+        <select id="dept" ${isSpec ? "required" : ""}>
+          <option value="" disabled ${state.dept && state.dept !== "GEN" ? "" : "selected"}>${esc(t("deptPlaceholder"))}</option>
+          ${deptOptions}
+        </select>
+        <p class="field-hint">${esc(t("specializedNotice"))}</p>
+      </div>
+
+      <div class="notice-box" id="preSpecNotice" ${!isSpec ? "" : 'style="display:none;"'}>
+        ${ICONS.book} <span>${esc(t("notSpecializedNotice"))}</span>
+      </div>
+
+      <div class="field" id="cohortGroupField" ${requiresCohort ? "" : 'style="display:none;"'}>
+        <span class="field-label">${esc(t("cohortGroupLabel"))}</span>
+        <div class="choice-row">
+          <label class="choice">
+            <input type="radio" name="cohortGroup" value="A" ${groupChecked("A")}>
+            <span>${esc(t("groupA"))}</span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="cohortGroup" value="B" ${groupChecked("B")}>
+            <span>${esc(t("groupB"))}</span>
+          </label>
+        </div>
+        <p class="field-hint">${esc(t("cohortGroupHint"))}</p>
+      </div>
+
+      <div class="field" id="projectField" ${canProj ? "" : 'style="display:none;"'}>
         <span class="field-label">${esc(t("projectLabel"))}</span>
         <div class="choice-row">
           <label class="choice">
@@ -252,23 +335,17 @@ function renderSetup() {
             <span>${esc(t("no"))}</span>
           </label>
         </div>
-        <p class="field-hint">${esc(t("projectHint"))}</p>
+        <p class="field-hint">${esc(t("projectHint"))} · <em>${esc(t("projectEligibilityNote"))}</em></p>
       </div>
 
-      <div class="field">
-        <label class="field-label" for="gpa">${esc(t("gpaLabel"))}</label>
-        <select id="gpa" required>
-          <option value="" disabled ${state.gpaRuleId ? "" : "selected"} hidden></option>
-          ${gpaOptions}
-        </select>
-      </div>
-
-      <div class="field" id="extraHoursField" hidden>
+      <div class="overload-box" id="extraHoursBox" ${canOver ? "" : 'style="display:none;"'}>
         <label class="choice choice-block">
           <input type="checkbox" id="extraHours" ${checked(state.extraHours)}>
-          <span>${esc(t("extraHoursLabel"))}</span>
+          <strong>${esc(t("extraHoursLabel"))}</strong>
         </label>
-        <p class="field-hint">${esc(t("extraHoursHint"))}</p>
+        <p class="overload-reason" id="overloadReasonText">
+          ${esc(currentLevel === 4 && initialGpa >= 2.0 ? t("overloadReasonLevel4") : t("overloadReasonGpa3"))}
+        </p>
       </div>
 
       <button class="btn btn-primary btn-block" type="submit">${esc(t("startBtn"))}</button>
@@ -280,45 +357,152 @@ function bindSetup() {
   const form = $("#setupForm");
   if (!form) return;
 
-  const gpaSelect = $("#gpa");
-  const extraField = $("#extraHoursField");
+  const hoursInput = $("#passedHours");
+  const gpaInput = $("#gpaInput");
+  const deptField = $("#deptField");
+  const deptSelect = $("#dept");
+  const preSpecNotice = $("#preSpecNotice");
+  const cohortField = $("#cohortGroupField");
+  const projectField = $("#projectField");
+  const extraHoursBox = $("#extraHoursBox");
+  const extraHoursCheck = $("#extraHours");
+  const overloadReasonText = $("#overloadReasonText");
 
-  const syncExtraField = () => {
-    const rule = APP_CONFIG.gpaRules.find((r) => r.id === gpaSelect.value);
-    const show = !!rule && rule.minGpa >= APP_CONFIG.extraHours.requiresGpa;
-    extraField.hidden = !show;
-    if (!show) $("#extraHours").checked = false;
+  const calcLevelBadge = $("#calcLevelBadge");
+  const calcSpecBadge = $("#calcSpecBadge");
+  const calcLimitDisplay = $("#calcLimitDisplay");
+
+  const updateCalculations = () => {
+    const rawHours = hoursInput.value.trim();
+    const rawGpa = gpaInput.value.trim();
+
+    const hours = rawHours !== "" ? Math.max(0, Number(rawHours)) : 0;
+    const gpa = rawGpa !== "" ? Math.max(0, Math.min(4.0, Number(rawGpa))) : 0;
+
+    const level = ACADEMIC_BYLAWS.calcLevel(hours);
+    const isSpec = ACADEMIC_BYLAWS.isSpecialized(hours);
+    const canProj = ACADEMIC_BYLAWS.canTakeProject(hours);
+    const canOver = ACADEMIC_BYLAWS.canOverload(hours, gpa);
+    const requiresCohort = ACADEMIC_BYLAWS.requiresCohortGroup(hours);
+    const baseHours = ACADEMIC_BYLAWS.calcBaseHours(gpa);
+
+    // Update Live Badges
+    if (calcLevelBadge) calcLevelBadge.textContent = t("level" + level);
+    if (calcSpecBadge) {
+      calcSpecBadge.className = isSpec ? "badge-spec-active" : "badge-spec-general";
+      calcSpecBadge.textContent = isSpec ? t("statusSpecialized") : t("statusGeneral");
+    }
+    if (calcLimitDisplay) {
+      calcLimitDisplay.textContent = t("gpaHoursDesc")
+        .replace("{h}", baseHours)
+        .replace("{c}", Math.floor(baseHours / 3));
+    }
+
+    // Department field visibility
+    if (deptField && preSpecNotice && deptSelect) {
+      if (isSpec) {
+        deptField.style.display = "";
+        preSpecNotice.style.display = "none";
+        deptSelect.required = true;
+      } else {
+        deptField.style.display = "none";
+        preSpecNotice.style.display = "";
+        deptSelect.required = false;
+      }
+    }
+
+    // Cohort Group visibility (Levels 1 & 2)
+    if (cohortField) {
+      cohortField.style.display = requiresCohort ? "" : "none";
+      if (!requiresCohort) {
+        const checkedGrp = form.querySelector('input[name="cohortGroup"]:checked');
+        if (checkedGrp) checkedGrp.checked = false;
+      }
+    }
+
+    // Graduation project visibility (>= 85h)
+    if (projectField) {
+      projectField.style.display = canProj ? "" : "none";
+      if (!canProj) {
+        const projYes = form.querySelector('input[name="project"][value="yes"]');
+        if (projYes && projYes.checked) projYes.checked = false;
+      }
+    }
+
+    // Overload 21h visibility
+    if (extraHoursBox && extraHoursCheck && overloadReasonText) {
+      extraHoursBox.style.display = canOver ? "" : "none";
+      if (!canOver) {
+        extraHoursCheck.checked = false;
+      } else {
+        overloadReasonText.textContent = (level === 4 && gpa >= 2.0)
+          ? t("overloadReasonLevel4")
+          : t("overloadReasonGpa3");
+      }
+    }
   };
-  gpaSelect.addEventListener("change", syncExtraField);
-  syncExtraField();
+
+  hoursInput.addEventListener("input", updateCalculations);
+  gpaInput.addEventListener("input", updateCalculations);
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
-    state.dept = $("#dept").value || null;
-    const credit = form.querySelector('input[name="credit"]:checked');
-    const project = form.querySelector('input[name="project"]:checked');
-    state.creditOk = credit ? credit.value === "ok" : null;
-    state.project = project ? project.value === "yes" : null;
-    state.gpaRuleId = gpaSelect.value || null;
-    state.extraHours = $("#extraHours").checked;
+    const rawHours = hoursInput.value.trim();
+    const rawGpa = gpaInput.value.trim();
 
-    if (!state.dept || state.creditOk === null || state.project === null || !state.gpaRuleId) {
+    if (rawHours === "" || isNaN(Number(rawHours)) || Number(rawHours) < 0 ||
+        rawGpa === "" || isNaN(Number(rawGpa)) || Number(rawGpa) < 0 || Number(rawGpa) > 4.0) {
       form.classList.add("shake");
       setTimeout(() => form.classList.remove("shake"), 400);
       return;
     }
 
-    state.selected = [];
-    state.picks = {};
-    if (!state.creditOk) {
-      state.step = "notready";
-    } else {
-      computeLimit();
-      state.step = "catalog";
-      if (typeof Analytics !== "undefined") {
-        Analytics.trackScheduleStarted(state);
+    const hours = Math.round(Number(rawHours));
+    const gpa = Number(Number(rawGpa).toFixed(2));
+    const level = ACADEMIC_BYLAWS.calcLevel(hours);
+    const isSpec = ACADEMIC_BYLAWS.isSpecialized(hours);
+    const requiresCohort = ACADEMIC_BYLAWS.requiresCohortGroup(hours);
+    const canProj = ACADEMIC_BYLAWS.canTakeProject(hours);
+
+    state.passedHours = hours;
+    state.gpa = gpa;
+    state.level = level;
+
+    if (isSpec) {
+      state.dept = deptSelect.value || null;
+      if (!state.dept) {
+        form.classList.add("shake");
+        setTimeout(() => form.classList.remove("shake"), 400);
+        return;
       }
+    } else {
+      state.dept = "GEN";
     }
+
+    if (requiresCohort) {
+      const grp = form.querySelector('input[name="cohortGroup"]:checked');
+      state.group = grp ? grp.value : "A";
+    } else {
+      state.group = null;
+    }
+
+    if (canProj) {
+      const proj = form.querySelector('input[name="project"]:checked');
+      state.project = proj ? proj.value === "yes" : false;
+    } else {
+      state.project = false;
+    }
+
+    const eligibleOverload = ACADEMIC_BYLAWS.canOverload(hours, gpa);
+    state.extraHours = eligibleOverload && extraHoursCheck.checked;
+
+    computeLimit();
+    state.step = "catalog";
+
+    if (typeof Analytics !== "undefined") {
+      Analytics.trackScheduleStarted(state);
+    }
+
     persist();
     renderAll();
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -840,7 +1024,9 @@ function renderTimetablePanel(model) {
 
 /* ---------------------------------------------------------- Planner view */
 function renderPlanner() {
-  const deptName = tr(DEPT_NAMES[state.dept]);
+  const deptName = state.dept === "GEN"
+    ? t("generalTag")
+    : tr(DEPT_NAMES[state.dept] || { ar: state.dept, en: state.dept });
   const groups = groupCourses();
   const model = Timetable.build(state);
   const asList = state.catalogView === "list";
@@ -851,8 +1037,16 @@ function renderPlanner() {
   <div class="planner">
     <div class="summary-bar">
       <div class="summary-item">
+        <span class="summary-label">${esc(t("levelLabel") || "المستوى")}</span>
+        <span class="summary-value">${esc(t("levelPrefix"))} ${state.level}${state.group ? " · " + esc(t("groupTag").replace("{g}", state.group)) : ""}</span>
+      </div>
+      <div class="summary-item">
         <span class="summary-label">${esc(t("deptLabel"))}</span>
-        <span class="summary-value">${esc(state.dept)} · ${esc(deptName)}</span>
+        <span class="summary-value">${state.dept === "GEN" ? esc(deptName) : esc(state.dept) + " · " + esc(deptName)}</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">GPA</span>
+        <span class="summary-value">${state.gpa != null ? Number(state.gpa).toFixed(2) : "—"}</span>
       </div>
       <div class="summary-item">
         <span class="summary-label">${esc(t("yourLimit"))}</span>

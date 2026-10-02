@@ -70,7 +70,10 @@ const Analytics = {
   trackScheduleStarted(state) {
     this.track("schedule_started", {
       department: state.dept,
-      gpa_rule: state.gpaRuleId,
+      level: state.level,
+      passed_hours: state.passedHours,
+      gpa: state.gpa,
+      group: state.group || "none",
       has_project: state.project ? "yes" : "no",
       extra_hours: state.extraHours ? "yes" : "no",
       hours_limit: state.hoursLimit,

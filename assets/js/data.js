@@ -65,37 +65,72 @@ const APP_CONFIG = {
 
   departments: ["CS", "IT", "IS", "DS", "AI"],
 
-  // Minimum passed credit hours required to use the tool (level 4)
-  minCreditHours: 96,
+  specializationHours: 45,
+  minProjectHours: 85,
+  creditHoursPerCourse: 3,
+  groups: ["A", "B"],
 
-  // Maximum credit hours by GPA at the start of the term (from the bylaws)
-  gpaRules: [
-    { id: "high", minGpa: 2,    maxHours: 18,
-      label: { ar: "2 أو أكثر", en: "2.00 or above" },
-      desc:  { ar: "18 ساعة معتمدة", en: "18 credit hours" } },
-    { id: "mid",  minGpa: 1,    maxHours: 15,
-      label: { ar: "أكبر من 1 وأقل من 2", en: "1.00 – 1.99" },
-      desc:  { ar: "15 ساعة معتمدة", en: "15 credit hours" } },
-    { id: "low",  minGpa: 0,    maxHours: 12,
-      label: { ar: "أقل من 1", en: "Below 1.00" },
-      desc:  { ar: "12 ساعة معتمدة", en: "12 credit hours" } },
-  ],
-
-  // Optional increase to 21h for level-4 students with GPA >= 2 (bylaws cases)
-  extraHours: {
-    maxHours: 21,
-    requiresGpa: 2,
-    label: { ar: "تنطبق عليّ حالة زيادة الحد الأقصى إلى 21 ساعة", en: "I qualify for the increased 21-hour limit" },
-    hint:  { ar: "لطلاب المستوى الرابع الحاصلين على معدل 2 أو أكثر في الحالات المنصوص عليها باللائحة", en: "For level-4 students with GPA 2.00+ in the cases listed in the bylaws" },
+  // Base bylaws credit limits (18h for >=2, 15h for >1 and <2, 12h for <=1)
+  gpaThresholds: {
+    high: 2.0,
+    mid: 1.0,
   },
 
-  // Graduation project: counts 3h toward the limit, NOT shown in the grid
+  // Overload allowance to 21h (Level 4 with GPA >= 2.0, OR any Level with GPA >= 3.0)
+  overload: {
+    maxHours: 21,
+    minGpaAnyLevel: 3.0,
+    minGpaLevel4: 2.0,
+  },
+
+  // Graduation project: requires 85+ passed hours, takes 3h toward credit limit
   project: {
     creditHours: 3,
+    minPassedHours: 85,
     label: { ar: "مشروع التخرج", en: "Graduation Project" },
   },
+};
 
-  creditHoursPerCourse: 3,
+/* ---------------------------------------------------------------------------
+ * Academic Bylaws Calculation Engine
+ * Strictly follows Cairo University FCAI regulations
+ * ------------------------------------------------------------------------- */
+const ACADEMIC_BYLAWS = {
+  calcLevel(passedHours) {
+    const h = Number(passedHours) || 0;
+    if (h < 27) return 1;
+    if (h < 60) return 2;
+    if (h < 96) return 3;
+    return 4;
+  },
+
+  isSpecialized(passedHours) {
+    return (Number(passedHours) || 0) >= APP_CONFIG.specializationHours;
+  },
+
+  canTakeProject(passedHours) {
+    return (Number(passedHours) || 0) >= APP_CONFIG.minProjectHours;
+  },
+
+  calcBaseHours(gpa) {
+    const val = Number(gpa);
+    if (isNaN(val) || val < 0) return 18;
+    if (val >= APP_CONFIG.gpaThresholds.high) return 18;
+    if (val > APP_CONFIG.gpaThresholds.mid) return 15;
+    return 12;
+  },
+
+  canOverload(passedHours, gpa) {
+    const level = this.calcLevel(passedHours);
+    const val = Number(gpa);
+    if (isNaN(val) || val < 0) return false;
+    return (level === 4 && val >= APP_CONFIG.overload.minGpaLevel4) ||
+           (val >= APP_CONFIG.overload.minGpaAnyLevel);
+  },
+
+  requiresCohortGroup(passedHours) {
+    return this.calcLevel(passedHours) <= 2;
+  },
 };
 
 /* ---------------------------------------------------------------------------
